@@ -1,0 +1,15 @@
+#Please don't change the field name/key, only change the value
+
+remodiffuse:
+    config: "configs/remodiffuse/remodiffuse_t2m.py"
+    ckpt: "logs/remodiffuse/remodiffuse_t2m/latest.pth"
+
+motiondiffuse:
+    config: "configs/motiondiffuse/motiondiffuse_t2m.py"
+    ckpt: "logs/motiondiffuse/motiondiffuse_t2m/latest.pth"
+
+mdm:
+    config: "configs/mdm/mdm_t2m_official.py"
+    ckpt: "logs/mdm/mdm_t2m/latest.pth"
+
+dataset: "data/datasets/human_ml3d/"
