@@ -122,7 +122,6 @@ logs/
 
 
 # Visualization
-*.mp4
 *.png
 *.gif
 *.jpg
