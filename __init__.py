@@ -17,7 +17,6 @@ from mogen.utils.plot_utils import (
     t2m_kinematic_chain
 )
 from scipy.ndimage import gaussian_filter
-from IPython.display import Image
 import comfy.model_management as model_management
 from .config import get_model_dataset_dict
 import warnings

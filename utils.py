@@ -17,7 +17,6 @@ from mogen.utils.plot_utils import (
     t2m_kinematic_chain
 )
 from scipy.ndimage import gaussian_filter
-from IPython.display import Image
 import comfy.model_management as model_management
 from torch.hub import download_url_to_file, get_dir
 from urllib.parse import urlparse
