@@ -6,4 +6,3 @@ matplotlib
 git+https://github.com/openai/CLIP.git
 addict
 yapf
-pyrender
