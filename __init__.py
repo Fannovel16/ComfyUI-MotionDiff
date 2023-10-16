@@ -163,7 +163,7 @@ class EmptyMotionData:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "frames": ("INT", {"default": 1, "min": 1, "max": 196})
+                "frames": ("INT", {"default": 196, "min": 1, "max": 196})
             }
         }
 
