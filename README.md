@@ -21,5 +21,5 @@ If you can't run **install.bat** (e.g. you are a Linux user). Open the CMD/Shell
   - Start ComfyUI
 
 # Examples
-https://github.com/Fannovel16/ComfyUI-MotionDiff/raw/main/examples/original.mp4
-https://github.com/Fannovel16/ComfyUI-MotionDiff/raw/main/examples/pseudo-openpose.mp4
+https://github.com/Fannovel16/ComfyUI-MotionDiff/blob/main/examples/original.mp4
+https://github.com/Fannovel16/ComfyUI-MotionDiff/blob/main/examples/pseudo-openpose.mp4
