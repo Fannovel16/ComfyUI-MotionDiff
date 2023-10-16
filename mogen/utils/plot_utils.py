@@ -142,7 +142,7 @@ def recover_from_ric(data, joints_num):
 
     return positions
 
-def plot_3d_motion(save_path, kinematic_tree, joints, distance, elevation, rotation, title, figsize=(10, 10), fps=120,  radius=4, visualization="original", save_as_pil_lists=False):
+def plot_3d_motion(save_path, kinematic_tree, joints, title, figsize=(10, 10), fps=120, radius=4, visualization="original", save_as_pil_lists=False):
     matplotlib.use('Agg')
 
     title_sp = title.split(' ')
@@ -208,8 +208,8 @@ def plot_3d_motion(save_path, kinematic_tree, joints, distance, elevation, rotat
             line.remove()
         for collection in ax.collections:
             collection.remove()
-        ax.view_init(elev=elevation, azim=rotation)
-        ax._dist = distance #ax.dist = 7.5, https://matplotlib.org/stable/api/prev_api_changes/api_changes_3.8.0.html#axes3d
+        ax.view_init(elev=120, azim=-90)
+        ax._dist = 7.5 #ax.dist = 7.5, https://matplotlib.org/stable/api/prev_api_changes/api_changes_3.8.0.html#axes3d
         if visualization == "original":
             plot_xzPlane(MINS[0] - trajec[index, 0], MAXS[0] - trajec[index, 0], 0, MINS[2] - trajec[index, 1],
                         MAXS[2] - trajec[index, 1])
