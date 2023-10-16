@@ -147,7 +147,7 @@ class MotionCLIPTextEncode:
             "required": {
                 "md_clip": ("MD_CLIP", ),
                 "motion_data": ("MOTION_DATA", ),
-                "text": ("STRING", {"default": "a person performs a cartwheel" ,"multiline": False})
+                "text": ("STRING", {"default": "a person performs a cartwheel" ,"multiline": True})
             },
         }
 
