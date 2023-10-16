@@ -1,4 +1,4 @@
-_base_ = ['../_base_/datasets/kit_ml_bs128.py']
+_base_ = ['MOTION_DIFF_BASE_DATASET']
 
 # checkpoint saving
 checkpoint_config = dict(interval=1)

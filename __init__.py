@@ -1,7 +1,4 @@
-import matplotlib
-from .mogen import digit_version
-assert digit_version(matplotlib.__version__) == digit_version("3.3.1"), "This extension requires matplotlib==3.3.1, otherwise the visualization won't work."
-
+import torch
 import os
 import sys
 from pathlib import Path
@@ -22,33 +19,25 @@ from mogen.utils.plot_utils import (
 from scipy.ndimage import gaussian_filter
 from IPython.display import Image
 import comfy.model_management as model_management
+from .config import get_model_dataset_dict
+import warnings
+from .utils import *
 
-import yaml
-CONFIGS = yaml.load((EXTENSION_PATH / "config.yml").resolve())
-DATASET_PATH = Path(CONFIGS.dataset)
-mean_path = DATASET_PATH / "mean.npy"
-std_path = DATASET_PATH / "std.npy"
-assert os.path.exists(mean_path) and os.path.exists(std_path), "Dataset folder not found or lost mean.npy, std.npy"
-mean = np.load(mean_path)
-std = np.load(std_path)
-
-def create_mdm_model(config_path, ckpt_path):
-    cfg = mmcv.Config.fromfile(config_path)
+def create_mdm_model(model_config):
+    cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
     mdm = build_architecture(cfg.model)
-    load_checkpoint(mdm, ckpt_path, map_location='cpu')
-    motion_module = motion_module.to(model_management.unet_offload_device())
-    mdm.eval()
+    load_checkpoint(mdm, str(model_config.ckpt_path), map_location='cpu')
+    mdm.eval().cpu()
     return mdm
 
-def is_model_available(mdm_config):
-    return os.path.exists(mdm_config["config"]) and os.path.exists(mdm_config["ckpt"])
-
-class MotionDiffModel(torch.nn.Module): #Anything beside CLIP (mdm.model)
-    def __init__(self, **kwargs) -> None:
-        super(MotionDiffModel).__init__()
-        self.loss_recon = kwargs["loss_recon"]
-        self.diffusion_train = kwargs["diffusion_train"]
-        self.diffusion_test = kwargs["sampler"]
+class MotionDiffModelWrapper(torch.nn.Module): #Anything beside CLIP (mdm.model)
+    def __init__(self, mdm, dataset) -> None:
+        super(MotionDiffModelWrapper, self).__init__()
+        self.loss_recon=mdm.loss_recon
+        self.diffusion_train=mdm.diffusion_train
+        self.diffusion_test=mdm.diffusion_test
+        self.sampler=mdm.sampler
+        self.dataset = dataset
 
     def forward(self, clip, cond_dict, **kwargs):
         motion, motion_mask = kwargs['motion'].float(), kwargs['motion_mask'].float()
@@ -87,38 +76,73 @@ class MotionDiffModel(torch.nn.Module): #Anything beside CLIP (mdm.model)
         results['pred_motion'] = output
         results = self.split_results(results)
         return results
-
-class MotionDiffCLIP(torch.nn.Module):
-    def __init__(self, model):
-        super(MotionDiffCLIP).__init__()
-        self.model = model
     
-    def forward(self, text):
-        return self.model.get_precompute_condition(device=model_management.get_torch_device(), text=text)
+    def split_results(self, results):
+        B = results['motion'].shape[0]
+        output = []
+        for i in range(B):
+            batch_output = dict()
+            batch_output['motion'] = to_cpu(results['motion'][i])
+            batch_output['pred_motion'] = to_cpu(results['pred_motion'][i])
+            batch_output['motion_length'] = to_cpu(results['motion_length'][i])
+            batch_output['motion_mask'] = to_cpu(results['motion_mask'][i])
+            if 'pred_motion_length' in results.keys():
+                batch_output['pred_motion_length'] = to_cpu(results['pred_motion_length'][i])
+            else:
+                batch_output['pred_motion_length'] = to_cpu(results['motion_length'][i])
+            if 'pred_motion_mask' in results:
+                batch_output['pred_motion_mask'] = to_cpu(results['pred_motion_mask'][i])
+            else:
+                batch_output['pred_motion_mask'] = to_cpu(results['motion_mask'][i])
+            if 'motion_metas' in results.keys():
+                motion_metas = results['motion_metas'][i]
+                if 'text' in motion_metas.keys():
+                    batch_output['text'] = motion_metas['text']
+                if 'token' in motion_metas.keys():
+                    batch_output['token'] = motion_metas['token']
+            output.append(batch_output)
+        return output
+
+class MotionDiffCLIPWrapper(torch.nn.Module):
+    def __init__(self, mdm):
+        super(MotionDiffCLIPWrapper, self).__init__()
+        self.model = mdm.model
+    
+    def forward(self, text, motion_data):
+        self.model.to(model_management.get_torch_device())
+        B, T = motion_data["motion"].shape[:2]
+        texts = []
+        for _ in range(B):
+            texts.append(text)
+        out = self.model.get_precompute_condition(device=model_management.get_torch_device(), text=texts, **motion_data)
+        self.model.cpu()
+        return out
+
+model_dataset_dict = None
 
 class MotionDiffLoader:
     @classmethod
     def INPUT_TYPES(s):
+        global model_dataset_dict
+        model_dataset_dict = get_model_dataset_dict()
         return {
             "required": {
-                "mdm_name": (
-                    list(
-                        filter(CONFIGS.keys(), lambda key: (key != "dataset") and is_model_available(CONFIGS[key]))
-                    ), 
-                    { "default": "remodiffuse" }
+                "model_dataset": (
+                    list(model_dataset_dict.keys()), 
+                    { "default": "remodiffuse-human_ml3d" }
                 )
             },
         }
 
     RETURN_TYPES = ("MD_MODEL", "MD_CLIP")
-    CATEGORY = "Human Motion Diff"
+    CATEGORY = "MotionDiff"
     FUNCTION = "load_mdm"
 
-    def load_mdm(self, mdm_name):
-        mdm = create_mdm_model(mdm_name)
-        model = MotionDiffModel(loss_recon=mdm.loss_recon, diffusion_train=mdm.diffusion_train, diffusion_test=mdm.diffusion_test, sampler=mdm.sampler)
-        clip = mdm.model
-        return (model, clip)
+    def load_mdm(self, model_dataset):
+        global model_dataset_dict
+        model_config = model_dataset_dict[model_dataset]()
+        mdm = create_mdm_model(model_config)
+        return (MotionDiffModelWrapper(mdm, dataset=model_config.dataset), MotionDiffCLIPWrapper(mdm))
 
 class MotionDiffTextEncode:
     @classmethod
@@ -126,16 +150,37 @@ class MotionDiffTextEncode:
         return {
             "required": {
                 "clip": ("MD_CLIP", ),
-                "text": ("STRING", {"multiline": True})
+                "motion_data": ("MOTION_DATA", ),
+                "text": ("STRING", {"default": '' ,"multiline": False})
             },
         }
 
     RETURN_TYPES = ("MD_CONDITIONING",)
-    CATEGORY = "Human Motion Diff"
+    CATEGORY = "MotionDiff"
     FUNCTION = "encode_text"
 
-    def encode_text(self, clip, text):
-        return (clip(text), )
+    def encode_text(self, clip, motion_data, text):
+        return (clip(text, motion_data), )
+
+class EmptyMotionData:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "frames": ("INT", {"default": 1, "min": 1, "max": 196})
+            }
+        }
+
+    RETURN_TYPES = ("MOTION_DATA", )
+    CATEGORY = "MotionDiff"
+    FUNCTION = "encode_text"
+
+    def encode_text(self, frames):
+        return ({
+            'motion': torch.zeros(1, frames, 263),
+            'motion_mask': torch.ones(1, frames),
+            'motion_length': torch.Tensor([frames]).long(),
+        }, )
 
 class MotionDiffSimpleSampler:
     @classmethod
@@ -145,32 +190,71 @@ class MotionDiffSimpleSampler:
                 "sampler_name": (["ddpm", "ddim"], ),
                 "model": ("MD_MODEL", ),
                 "clip": ("MD_CLIP", ),
-                "cond": ("MD_CONDITIONING", )
-            },
+                "md_cond": ("MD_CONDITIONING", ),
+                "motion_data": ("MOTION_DATA",)
+            }
         }
 
     RETURN_TYPES = ("MOTION_DATA",)
-    CATEGORY = "Human Motion Diff"
+    CATEGORY = "MotionDiff"
     FUNCTION = "sample"
 
-    def sample(self, sampler_name, model, clip, cond):
-        device = model_management.get_torch_device()
-        motion = torch.zeros(1, motion_length, 263).to(device)
-        motion_mask = torch.ones(1, motion_length).to(device)
-        motion_length = torch.Tensor([motion_length]).long().to(device)
-        model = model.to(device)
+    def sample(self, sampler_name, model: MotionDiffModelWrapper, clip, md_cond, motion_data):
+        model.to(model_management.get_torch_device())
+        clip.to(model_management.get_torch_device())
+        for key in motion_data:
+            motion_data[key] = to_gpu(motion_data[key])
+
         kwargs = {
-            'motion': motion,
-            'motion_mask': motion_mask,
-            'motion_length': motion_length,
+            **motion_data,
             'inference_kwargs': {},
             'sampler': sampler_name,
-
         }
 
         with torch.no_grad():
-            output = model(clip, cond_dict=cond, **kwargs)[0]['pred_motion']
-            pred_motion = output.cpu().detach().numpy()
-            pred_motion = pred_motion * std + mean
+            output = model(clip.model, cond_dict=md_cond, **kwargs)[0]['pred_motion']
+            pred_motion = output * model.dataset.std + model.dataset.mean
+            pred_motion = pred_motion.cpu().detach()
         
-        return pred_motion
+        model.cpu(), clip.cpu()
+        for key in motion_data:
+            motion_data[key] = to_cpu(motion_data[key])
+        return ({
+            'motion': pred_motion,
+            'motion_mask': motion_data['motion_mask'],
+            'motion_length': motion_data['motion_length'],
+        }, )
+
+class MotionDiffVisualizer:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "motion_data": ("MOTION_DATA", ),
+                "title": ("STRING", {"default": '' ,"multiline": False}),
+                "visualization": (["original", "pseudo-openpose"], {"default": "pseudo-openpose"})
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    CATEGORY = "MotionDiff"
+    FUNCTION = "visualize"
+
+    def visualize(self, motion_data, title, visualization):
+        pred_motion = motion_data["motion"]
+        joint = recover_from_ric(pred_motion, 22).numpy()
+        joint = motion_temporal_filter(joint, sigma=2.5)
+        pil_frames = plot_3d_motion(None, t2m_kinematic_chain, joint, title=title, fps=1, save_as_pil_lists=True, visualization=visualization)
+        tensor_frames = []
+        for pil_image in pil_frames:
+            np_image = np.array(pil_image.convert("RGB")).astype(np.float32) / 255.0
+            tensor_frames.append(torch.from_numpy(np_image))
+        return (torch.stack(tensor_frames, dim=0), )
+
+NODE_CLASS_MAPPINGS = {
+    "MotionDiffLoader": MotionDiffLoader,
+    "MotionDiffTextEncode": MotionDiffTextEncode,
+    "MotionDiffSimpleSampler": MotionDiffSimpleSampler,
+    "EmptyMotionData": EmptyMotionData,
+    "MotionDiffVisualizer": MotionDiffVisualizer
+}

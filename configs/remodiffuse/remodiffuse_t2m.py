@@ -1,4 +1,4 @@
-_base_ = ['../_base_/datasets/human_ml3d_bs128.py']
+_base_ = ['MOTION_DIFF_BASE_DATASET']
 
 # checkpoint saving
 checkpoint_config = dict(interval=1)
@@ -71,7 +71,7 @@ model = dict(
             num_motion_layers=2,
             kinematic_coef=0.1,
             topk=2,
-            retrieval_file='data/database/t2m_text_train.npz',
+            retrieval_file="MOTION_DIFF_RETRIEVAL_FILE",
             latent_dim=latent_dim,
             output_dim=latent_dim,
             max_seq_len=max_seq_len,

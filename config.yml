@@ -1,15 +1,36 @@
-#Please don't change the field name/key, only change the value
+#Don't change "config" fields plz
+model:
+    remodiffuse:
+        config: 
+            human_ml3d: "configs/remodiffuse/remodiffuse_t2m.py"
+            kit_ml: "configs/remodiffuse/remodiffuse_kit.py"
+        ckpt: 
+            human_ml3d: "ckpts/remodiffuse_t2m.pth"
+            kit_ml: "ckpts/remodiffuse_kit.pth"
 
-remodiffuse:
-    config: "configs/remodiffuse/remodiffuse_t2m.py"
-    ckpt: "logs/remodiffuse/remodiffuse_t2m/latest.pth"
+    motiondiffuse:
+        config: 
+            human_ml3d: "configs/motiondiffuse/motiondiffuse_t2m.py"
+            kit_ml: "configs/motiondiffuse/motiondiffuse_kit.py"
+        ckpt: 
+            human_ml3d: "ckpts/motiondiffuse_t2m.pth"
+            kit_ml: "ckpts/motiondiffuse_kit.pth"
 
-motiondiffuse:
-    config: "configs/motiondiffuse/motiondiffuse_t2m.py"
-    ckpt: "logs/motiondiffuse/motiondiffuse_t2m/latest.pth"
+    mdm:
+        config: 
+            human_ml3d: "configs/mdm/mdm_t2m_official.py"
+            kit_ml: "configs/mdm/mdm_kit_official.py"
+        ckpt: 
+            human_ml3d: "ckpts/mdm_t2m.pth"
+            kit_ml: "ckpts/mdm_kit.pth"
 
-mdm:
-    config: "configs/mdm/mdm_t2m_official.py"
-    ckpt: "logs/mdm/mdm_t2m/latest.pth"
 
-dataset: "data/datasets/human_ml3d/"
+dataset: 
+    human_ml3d:
+        path: "datasets/human_ml3d/"
+        retrieval_db: "retrieval_dbs/t2m_text_train.npz"
+        base: "configs/_base_/datasets/human_ml3d_bs128.py"
+    kit_ml:
+        path: "datasets/kit_ml/"
+        retrieval_db: "retrieval_dbs/kit_text_train.npz"
+        base: "configs/_base_/datasets/kit_ml_bs128.py"
