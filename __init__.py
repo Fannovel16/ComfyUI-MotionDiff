@@ -144,14 +144,14 @@ class MotionDiffLoader:
         mdm = create_mdm_model(model_config)
         return (MotionDiffModelWrapper(mdm, dataset=model_config.dataset), MotionDiffCLIPWrapper(mdm))
 
-class MotionDiffTextEncode:
+class MotionCLIPTextEncode:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "clip": ("MD_CLIP", ),
+                "md_clip": ("MD_CLIP", ),
                 "motion_data": ("MOTION_DATA", ),
-                "text": ("STRING", {"default": '' ,"multiline": False})
+                "text": ("STRING", {"default": "a person performs a cartwheel" ,"multiline": False})
             },
         }
 
@@ -159,8 +159,8 @@ class MotionDiffTextEncode:
     CATEGORY = "MotionDiff"
     FUNCTION = "encode_text"
 
-    def encode_text(self, clip, motion_data, text):
-        return (clip(text, motion_data), )
+    def encode_text(self, md_clip, motion_data, text):
+        return (md_clip(text, motion_data), )
 
 class EmptyMotionData:
     @classmethod
@@ -188,8 +188,8 @@ class MotionDiffSimpleSampler:
         return {
             "required": {
                 "sampler_name": (["ddpm", "ddim"], ),
-                "model": ("MD_MODEL", ),
-                "clip": ("MD_CLIP", ),
+                "md_model": ("MD_MODEL", ),
+                "md_clip": ("MD_CLIP", ),
                 "md_cond": ("MD_CONDITIONING", ),
                 "motion_data": ("MOTION_DATA",)
             }
@@ -199,9 +199,9 @@ class MotionDiffSimpleSampler:
     CATEGORY = "MotionDiff"
     FUNCTION = "sample"
 
-    def sample(self, sampler_name, model: MotionDiffModelWrapper, clip, md_cond, motion_data):
-        model.to(model_management.get_torch_device())
-        clip.to(model_management.get_torch_device())
+    def sample(self, sampler_name, md_model: MotionDiffModelWrapper, md_clip, md_cond, motion_data):
+        md_model.to(model_management.get_torch_device())
+        md_clip.to(model_management.get_torch_device())
         for key in motion_data:
             motion_data[key] = to_gpu(motion_data[key])
 
@@ -212,11 +212,11 @@ class MotionDiffSimpleSampler:
         }
 
         with torch.no_grad():
-            output = model(clip.model, cond_dict=md_cond, **kwargs)[0]['pred_motion']
-            pred_motion = output * model.dataset.std + model.dataset.mean
+            output = md_model(md_clip.model, cond_dict=md_cond, **kwargs)[0]['pred_motion']
+            pred_motion = output * md_model.dataset.std + md_model.dataset.mean
             pred_motion = pred_motion.cpu().detach()
         
-        model.cpu(), clip.cpu()
+        md_model.cpu(), md_clip.cpu()
         for key in motion_data:
             motion_data[key] = to_cpu(motion_data[key])
         return ({
@@ -225,14 +225,16 @@ class MotionDiffSimpleSampler:
             'motion_length': motion_data['motion_length'],
         }, )
 
-class MotionDiffVisualizer:
+class MotionDataVisualizer:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
-                "title": ("STRING", {"default": '' ,"multiline": False}),
                 "visualization": (["original", "pseudo-openpose"], {"default": "pseudo-openpose"})
+            },
+            "optional": {
+                "opt_title": ("STRING", {"default": '' ,"multiline": False}),
             }
         }
 
@@ -240,11 +242,15 @@ class MotionDiffVisualizer:
     CATEGORY = "MotionDiff"
     FUNCTION = "visualize"
 
-    def visualize(self, motion_data, title, visualization):
+    def visualize(self, motion_data, visualization, opt_title=None):
         pred_motion = motion_data["motion"]
         joint = recover_from_ric(pred_motion, 22).numpy()
         joint = motion_temporal_filter(joint, sigma=2.5)
-        pil_frames = plot_3d_motion(None, t2m_kinematic_chain, joint, title=title, fps=1, save_as_pil_lists=True, visualization=visualization)
+        pil_frames = plot_3d_motion(
+            None, t2m_kinematic_chain, joint, 
+            title=opt_title if opt_title is not None else '', 
+            fps=1, save_as_pil_lists=True, visualization=visualization
+        )
         tensor_frames = []
         for pil_image in pil_frames:
             np_image = np.array(pil_image.convert("RGB")).astype(np.float32) / 255.0
@@ -253,8 +259,8 @@ class MotionDiffVisualizer:
 
 NODE_CLASS_MAPPINGS = {
     "MotionDiffLoader": MotionDiffLoader,
-    "MotionDiffTextEncode": MotionDiffTextEncode,
+    "MotionCLIPTextEncode": MotionCLIPTextEncode,
     "MotionDiffSimpleSampler": MotionDiffSimpleSampler,
     "EmptyMotionData": EmptyMotionData,
-    "MotionDiffVisualizer": MotionDiffVisualizer
+    "MotionDataVisualizer": MotionDataVisualizer
 }
