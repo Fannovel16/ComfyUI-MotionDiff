@@ -10,16 +10,13 @@ import numpy as np
 import torch
 from mogen.models import build_architecture
 from custom_mmpkg.custom_mmcv.runner import load_checkpoint
-from custom_mmpkg.custom_mmcv.parallel import MMDataParallel
 from mogen.utils.plot_utils import (
     recover_from_ric,
     plot_3d_motion,
     t2m_kinematic_chain
 )
-from scipy.ndimage import gaussian_filter
 import comfy.model_management as model_management
 from .config import get_model_dataset_dict
-import warnings
 from .utils import *
 
 def create_mdm_model(model_config):
@@ -230,7 +227,10 @@ class MotionDataVisualizer:
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
-                "visualization": (["original", "pseudo-openpose"], {"default": "pseudo-openpose"})
+                "visualization": (["original", "pseudo-openpose"], {"default": "pseudo-openpose"}),
+                "distance": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 10.0, "step": 0.1}),
+                "elevation": ("FLOAT", {"default": 120, "min": 0.0, "max": 300.0, "step": 0.1}),
+                "rotation": ("FLOAT", {"default": -90, "min": -180, "max": 180, "step": 1}),
             },
             "optional": {
                 "opt_title": ("STRING", {"default": '' ,"multiline": False}),
@@ -241,14 +241,14 @@ class MotionDataVisualizer:
     CATEGORY = "MotionDiff"
     FUNCTION = "visualize"
 
-    def visualize(self, motion_data, visualization, opt_title=None):
+    def visualize(self, motion_data, visualization, distance, elevation, rotation, opt_title=None):
         pred_motion = motion_data["motion"]
         joint = recover_from_ric(pred_motion, 22).numpy()
         joint = motion_temporal_filter(joint, sigma=2.5)
         pil_frames = plot_3d_motion(
-            None, t2m_kinematic_chain, joint, 
-            title=opt_title if opt_title is not None else '', 
-            fps=1, save_as_pil_lists=True, visualization=visualization
+            None, t2m_kinematic_chain, joint, distance, elevation, rotation,
+            title=opt_title if opt_title is not None else '',
+            fps=1,  save_as_pil_lists=True, visualization=visualization
         )
         tensor_frames = []
         for pil_image in pil_frames:
