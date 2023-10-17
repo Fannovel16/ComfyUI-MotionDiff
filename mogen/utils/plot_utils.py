@@ -142,7 +142,7 @@ def recover_from_ric(data, joints_num):
 
     return positions
 
-def plot_3d_motion(save_path, kinematic_tree, joints, distance, elevation, rotation, title, figsize=(10, 10), fps=120,  radius=4, visualization="original", save_as_pil_lists=False):
+def plot_3d_motion(save_path, kinematic_tree, joints, distance, elevation, rotation, poselinewidth, title, figsize=(10, 10), fps=120,  radius=4, visualization="original", save_as_pil_lists=False):
     matplotlib.use('Agg')
 
     title_sp = title.split(' ')
@@ -226,7 +226,7 @@ def plot_3d_motion(save_path, kinematic_tree, joints, distance, elevation, rotat
                 linewidth = 2.0
             if visualization == "pseudo-openpose":
                 for j in range(len(data[index, chain, 0]) - 1):
-                  ax.plot3D(data[index, chain, 0][j:j+2], data[index, chain, 1][j:j+2], data[index, chain, 2][j:j+2], linewidth=linewidth,
+                  ax.plot3D(data[index, chain, 0][j:j+2], data[index, chain, 1][j:j+2], data[index, chain, 2][j:j+2], linewidth=poselinewidth,
                             color=color[j % len(color)])
                   
             else:

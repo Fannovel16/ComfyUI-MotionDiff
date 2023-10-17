@@ -231,6 +231,7 @@ class MotionDataVisualizer:
                 "distance": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 10.0, "step": 0.1}),
                 "elevation": ("FLOAT", {"default": 120, "min": 0.0, "max": 300.0, "step": 0.1}),
                 "rotation": ("FLOAT", {"default": -90, "min": -180, "max": 180, "step": 1}),
+                "poselinewidth": ("FLOAT", {"default": 2, "min": 0, "max": 50, "step": 0.1}),
             },
             "optional": {
                 "opt_title": ("STRING", {"default": '' ,"multiline": False}),
@@ -241,12 +242,12 @@ class MotionDataVisualizer:
     CATEGORY = "MotionDiff"
     FUNCTION = "visualize"
 
-    def visualize(self, motion_data, visualization, distance, elevation, rotation, opt_title=None):
+    def visualize(self, motion_data, visualization, distance, elevation, rotation, poselinewidth, opt_title=None):
         pred_motion = motion_data["motion"]
         joint = recover_from_ric(pred_motion, 22).numpy()
         joint = motion_temporal_filter(joint, sigma=2.5)
         pil_frames = plot_3d_motion(
-            None, t2m_kinematic_chain, joint, distance, elevation, rotation,
+            None, t2m_kinematic_chain, joint, distance, elevation, rotation, poselinewidth,
             title=opt_title if opt_title is not None else '',
             fps=1,  save_as_pil_lists=True, visualization=visualization
         )
