@@ -110,8 +110,6 @@ data
 # !tests/data
 .vscode
 .idea
-*.pkl
-*.pkl.json
 *.log.json
 work_dirs/
 logs/
@@ -134,7 +132,6 @@ logs/
 
 # Loaded/Saved data files
 *.npz
-*.npy
 *.pickle
 
 # MacOS
@@ -147,3 +144,4 @@ env.sh
 datasets/*
 ckpts/*
 retrieval_dbs/*
+custom_mmpkg/custom_mmhuman3d

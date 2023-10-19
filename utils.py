@@ -10,6 +10,7 @@ from scipy.ndimage import gaussian_filter
 import comfy.model_management as model_management
 from torch.hub import download_url_to_file, get_dir
 from urllib.parse import urlparse
+from mogen.utils.plot_utils import recover_from_ric
 
 HF_PREFIX = "https://huggingface.co/spaces/mingyuan/ReMoDiffuse/resolve/main/"
 
@@ -20,7 +21,7 @@ def motion_temporal_filter(motion, sigma=1):
     return motion.reshape(motion.shape[0], -1, 3)
 
 def get_motion_length(motion_data):
-    return motion_data["samples"].shape[1]
+    return motion_data["motion"].shape[0]
 
 def to_cpu(x):
     if isinstance(x, torch.Tensor):
@@ -63,4 +64,9 @@ def load_file_from_url(url, model_dir=None, progress=True, file_name=None):
         download_url_to_file(url, cached_file, hash_prefix=None, progress=progress)
     return cached_file
 
-__all__ = ["motion_temporal_filter", "get_motion_length", "to_cpu", "to_gpu"]
+def motion_data_to_joints(motion_data_tensor):
+    joint = recover_from_ric(motion_data_tensor, 22).numpy()
+    joint = motion_temporal_filter(joint, sigma=2.5)
+    return joint
+
+__all__ = ["motion_temporal_filter", "get_motion_length", "to_cpu", "to_gpu", "motion_data_to_joints"]
