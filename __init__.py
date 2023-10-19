@@ -340,7 +340,7 @@ class RenderSMPLMesh:
         #Ref: https://github.com/mmatl/pyrender/issues/10#issuecomment-468995891
         normalized_depth = 1 - normalized_depth
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
-        depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth]
+        depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
         return (color_frames, depth_frames)
 
