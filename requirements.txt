@@ -8,7 +8,6 @@ addict
 yapf
 smplx
 h5py
-chumpy
 opencv-python
 einops
 pyrender
