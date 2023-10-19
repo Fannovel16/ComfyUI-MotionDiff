@@ -342,7 +342,7 @@ class RenderSMPLMesh:
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
         depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
-        return (color_frames, depth_frames)
+        return (color_frames, depth_frames,)
 
 NODE_CLASS_MAPPINGS = {
     "MotionDiffLoader": MotionDiffLoader,
