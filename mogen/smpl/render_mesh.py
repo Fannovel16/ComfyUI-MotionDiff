@@ -156,7 +156,7 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(motion_tensor, draw_platform=True, depth_only=False):
+def render_from_smpl(motion_tensor, yfov, move_x, move_y, move_z, draw_platform=True, depth_only=False):
     rot2xyz = Rotation2xyz(device=get_torch_device())
     faces = rot2xyz.smpl_model.faces
 
@@ -205,8 +205,8 @@ def render_from_smpl(motion_tensor, draw_platform=True, depth_only=False):
         
         sx, sy, tx, ty = [0.75, 0.75, 0, 0.10]
 
-        camera = pyrender.PerspectiveCamera(yfov=(np.pi / 3.0))
-
+        camera = pyrender.PerspectiveCamera(yfov)
+        
         light = pyrender.DirectionalLight(color=[1,1,1], intensity=300)
 
         scene.add(mesh)
@@ -235,14 +235,25 @@ def render_from_smpl(motion_tensor, draw_platform=True, depth_only=False):
 
         c = -np.pi / 6
 
-        scene.add(camera, pose=[[ 1, 0, 0, (minx+maxx).cpu().numpy()/2],
+        x_translation = move_x  # Your X-axis translation value
+        y_translation = move_y # Your Y-axis translation value
+        z_translation = move_z  # Your Z-axis translation value
 
-                                [ 0, np.cos(c), -np.sin(c), 1.5],
+        initial_pos = [(minx+maxx).cpu().numpy()/2 + x_translation,
+                    y_translation,
+                    max(4, minz.cpu().numpy()+(1.5-MINS[1].cpu().numpy())*2, (maxx-minx).cpu().numpy()) + z_translation]
 
-                                [ 0, np.sin(c), np.cos(c), max(4, minz.cpu().numpy()+(1.5-MINS[1].cpu().numpy())*2, (maxx-minx).cpu().numpy())],
+        pose = [[ 1, 0, 0, initial_pos[0]],
+                [ 0, np.cos(c), -np.sin(c), 1.5 + initial_pos[1]],
+                [ 0, np.sin(c), np.cos(c), initial_pos[2]],
+                [ 0, 0, 0, 1]
+            ]
 
-                                [ 0, 0, 0, 1]
-                                ])
+        # Add the camera to the scene with the modified pose
+        scene.add(camera, pose=pose)
+
+        # Add the camera to the scene with the modified pose
+        scene.add(camera, pose=pose)
         
         # render scene
         r = pyrender.OffscreenRenderer(960, 960)
