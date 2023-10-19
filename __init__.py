@@ -338,7 +338,7 @@ class RenderSMPLMesh:
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
         #Ref: https://github.com/mmatl/pyrender/issues/10#issuecomment-468995891
-        normalized_depth = 1 - normalized_depth
+        normalized_depth[normalized_depth != 0] = 1 - normalized_depth[normalized_depth != 0]
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
         depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
