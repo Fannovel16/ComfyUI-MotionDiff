@@ -321,7 +321,11 @@ class RenderSMPLMesh:
             "required": {
                 "smpl": ("SMPL", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
-                "depth_only": ("BOOLEAN", {"default": False})
+                "depth_only": ("BOOLEAN", {"default": False}),
+                "yfov": ("FLOAT", {"default": 3,"min": 0.1, "max": 10, "step": 0.1}),
+                "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
+                "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
+                "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
             }
         }
 
@@ -329,9 +333,9 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, draw_platform, depth_only):
+    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only):
         motion_tensor, _ = smpl
-        color_frames, depth_frames = render_from_smpl(motion_tensor.to(get_torch_device()), draw_platform, depth_only)
+        color_frames, depth_frames = render_from_smpl(motion_tensor.to(get_torch_device()),yfov, move_x, move_y, move_z, draw_platform,depth_only)
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
 
         #Normalize to [0, 1]
