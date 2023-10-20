@@ -239,7 +239,7 @@ class MotionDataVisualizer:
                 "distance": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 10.0, "step": 0.1}),
                 "elevation": ("FLOAT", {"default": 120, "min": 0.0, "max": 300.0, "step": 0.1}),
                 "rotation": ("FLOAT", {"default": -90, "min": -180, "max": 180, "step": 1}),
-                "poselinewidth": ("FLOAT", {"default": 2, "min": 0, "max": 50, "step": 0.1}),
+                "poselinewidth": ("FLOAT", {"default": 8, "min": 0, "max": 50, "step": 0.1}),
             },
             "optional": {
                 "opt_title": ("STRING", {"default": '' ,"multiline": False}),
