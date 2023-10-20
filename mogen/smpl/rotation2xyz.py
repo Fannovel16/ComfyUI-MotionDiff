@@ -8,10 +8,10 @@ JOINTSTYPES = ["a2m", "a2mpl", "smpl", "vibe", "vertices"]
 
 
 class Rotation2xyz:
-    def __init__(self, device, dataset='amass'):
+    def __init__(self, device, dataset='amass', smpl_model_path=None):
         self.device = device
         self.dataset = dataset
-        self.smpl_model = SMPL().eval().to(device)
+        self.smpl_model = SMPL(smpl_model_path).eval().to(device)
 
     def __call__(self, x, mask, pose_rep, translation, glob,
                  jointstype, vertstrans, betas=None, beta=0,

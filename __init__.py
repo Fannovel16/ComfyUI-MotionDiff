@@ -15,7 +15,7 @@ from mogen.utils.plot_utils import (
     t2m_kinematic_chain
 )
 from comfy.model_management import get_torch_device, soft_empty_cache
-from .config import get_model_dataset_dict
+from .md_config import get_model_dataset_dict, get_smpl_models_dict
 from .utils import *
 from mogen.smpl.simplify_loc2rot import joints2smpl
 from mogen.smpl.rotation2xyz import Rotation2xyz
@@ -24,8 +24,6 @@ from mogen.smpl.rotation2xyz import Rotation2xyz
 from mogen.smpl.render_mesh import render_from_smpl
 import gc
 from pathlib import Path
-
-rot2xyz = Rotation2xyz(device=get_torch_device())
 
 def create_mdm_model(model_config):
     cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
@@ -144,6 +142,8 @@ class MotionDiffLoader:
 
     def load_mdm(self, model_dataset):
         global model_dataset_dict
+        if model_dataset_dict is None:
+            model_dataset_dict = get_model_dataset_dict() #In case of API users
         model_config = model_dataset_dict[model_dataset]()
         mdm = create_mdm_model(model_config)
         return (MotionDiffModelWrapper(mdm, dataset=model_config.dataset), MotionDiffCLIPWrapper(mdm))
@@ -263,14 +263,18 @@ class MotionDataVisualizer:
             tensor_frames.append(torch.from_numpy(np_image))
         return (torch.stack(tensor_frames, dim=0), )
 
+smpl_model_dicts = None
 class SmplifyMotionData:
     @classmethod
     def INPUT_TYPES(s):
+        global smpl_model_dicts
+        smpl_model_dicts = get_smpl_models_dict()
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
                 "num_smplify_iters": ("INT", {"min": 10, "max": 1000, "default": 150}),
-                "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-2})
+                "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-2}),
+                "smpl_model": (list(smpl_model_dicts.keys()), {"default": "SMPL_NEUTRAL.pkl"})
             }
         }
 
@@ -278,14 +282,19 @@ class SmplifyMotionData:
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "convent"
     
-    def convent(self, motion_data, num_smplify_iters, smplify_step_size):
+    def convent(self, motion_data, num_smplify_iters, smplify_step_size, smpl_model):
+        global smpl_model_dicts
+        if smpl_model_dicts is None:
+            smpl_model_dicts = get_smpl_models_dict()
+        smpl_model_path = smpl_model_dicts[smpl_model]
         joints = motion_data_to_joints(motion_data["motion"])
         with torch.inference_mode(False):
             convention = joints2smpl(
                 num_frames=joints.shape[0], 
                 device=get_torch_device(), 
                 num_smplify_iters=num_smplify_iters, 
-                smplify_step_size=smplify_step_size
+                smplify_step_size=smplify_step_size,
+                smpl_model_path = smpl_model_path
             )
             motion_tensor, meta = convention.joint2smpl(joints)
         motion_tensor = motion_tensor.cpu().detach()
@@ -293,7 +302,7 @@ class SmplifyMotionData:
             meta[key] = meta[key].cpu().detach()
         gc.collect()
         soft_empty_cache()
-        return ((motion_tensor, meta), ) #Caching
+        return ((smpl_model_path, motion_tensor, meta), ) #Caching
 
 class RenderOpenPoseFromSMPL:
     @classmethod
@@ -322,7 +331,7 @@ class RenderSMPLMesh:
                 "smpl": ("SMPL", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "yfov": ("FLOAT", {"default": 3,"min": 0.1, "max": 10, "step": 0.1}),
+                "yfov": ("FLOAT", {"default": np.pi / 3.0, "min": 0.1, "max": 10, "step": 0.1}),
                 "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
@@ -334,8 +343,12 @@ class RenderSMPLMesh:
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
     def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only):
-        motion_tensor, _ = smpl
-        color_frames, depth_frames = render_from_smpl(motion_tensor.to(get_torch_device()),yfov, move_x, move_y, move_z, draw_platform,depth_only)
+        smpl_model_path, motion_tensor, _ = smpl
+        color_frames, depth_frames = render_from_smpl(
+            motion_tensor.to(get_torch_device()),
+            yfov, move_x, move_y, move_z, draw_platform,depth_only, 
+            smpl_model_path=smpl_model_path
+        )
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
 
         #Normalize to [0, 1]

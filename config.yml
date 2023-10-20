@@ -34,3 +34,5 @@ dataset:
         path: "datasets/kit_ml/"
         retrieval_db: "retrieval_dbs/kit_text_train.npz"
         base: "configs/_base_/datasets/kit_ml_bs128.py"
+
+smpl_models: "smpl_models/"
