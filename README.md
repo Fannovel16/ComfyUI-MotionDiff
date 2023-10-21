@@ -22,10 +22,3 @@ If you can't run **install.bat** (e.g. you are a Linux user). Open the CMD/Shell
 
 # Examples
 
-
-https://github.com/Fannovel16/ComfyUI-MotionDiff/assets/16047777/a738dd25-10bc-40db-90c1-04aed9bcdf52
-
-
-https://github.com/Fannovel16/ComfyUI-MotionDiff/assets/16047777/56e97a22-da31-40f4-a3c1-9df2fd3d706f
-
-

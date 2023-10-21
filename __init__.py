@@ -24,6 +24,7 @@ from mogen.smpl.rotation2xyz import Rotation2xyz
 from mogen.smpl.render_mesh import render_from_smpl
 import gc
 from pathlib import Path
+from PIL import ImageColor
 
 def create_mdm_model(model_config):
     cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
@@ -239,7 +240,7 @@ class MotionDataVisualizer:
                 "distance": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 10.0, "step": 0.1}),
                 "elevation": ("FLOAT", {"default": 120, "min": 0.0, "max": 300.0, "step": 0.1}),
                 "rotation": ("FLOAT", {"default": -90, "min": -180, "max": 180, "step": 1}),
-                "poselinewidth": ("FLOAT", {"default": 8, "min": 0, "max": 50, "step": 0.1}),
+                "poselinewidth": ("FLOAT", {"default": 4, "min": 0, "max": 50, "step": 0.1}),
             },
             "optional": {
                 "opt_title": ("STRING", {"default": '' ,"multiline": False}),
@@ -272,8 +273,8 @@ class SmplifyMotionData:
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
-                "num_smplify_iters": ("INT", {"min": 10, "max": 1000, "default": 150}),
-                "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-2}),
+                "num_smplify_iters": ("INT", {"min": 10, "max": 1000, "default": 50}),
+                "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-1}),
                 "smpl_model": (list(smpl_model_dicts.keys()), {"default": "SMPL_NEUTRAL.pkl"})
             }
         }
@@ -331,10 +332,11 @@ class RenderSMPLMesh:
                 "smpl": ("SMPL", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "yfov": ("FLOAT", {"default": np.pi / 3.0, "min": 0.1, "max": 10, "step": 0.1}),
+                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.05}),
                 "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
+                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False})
             }
         }
 
@@ -342,14 +344,21 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only):
+    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color):
         smpl_model_path, motion_tensor, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             motion_tensor.to(get_torch_device()),
             yfov, move_x, move_y, move_z, draw_platform,depth_only, 
             smpl_model_path=smpl_model_path
         )
+        bg_color = ImageColor.getcolor(background_hex_color, "RGB")
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
+        white_mask = [
+            (color_frames[..., 0] == 1.) & 
+            (color_frames[..., 1] == 1.) & 
+            (color_frames[..., 2] == 1.)
+        ]
+        color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
 
         #Normalize to [0, 1]
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())

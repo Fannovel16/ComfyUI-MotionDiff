@@ -1,0 +1,656 @@
+{
+  "last_node_id": 38,
+  "last_link_id": 47,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "EmptyMotionData",
+      "pos": [
+        1227,
+        -67
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MOTION_DATA",
+          "type": "MOTION_DATA",
+          "links": [
+            2,
+            6
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyMotionData"
+      },
+      "widgets_values": [
+        196
+      ]
+    },
+    {
+      "id": 4,
+      "type": "MotionDiffSimpleSampler",
+      "pos": [
+        1228,
+        -237
+      ],
+      "size": {
+        "0": 315,
+        "1": 118
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "md_model",
+          "type": "MD_MODEL",
+          "link": 4
+        },
+        {
+          "name": "md_clip",
+          "type": "MD_CLIP",
+          "link": 5
+        },
+        {
+          "name": "md_cond",
+          "type": "MD_CONDITIONING",
+          "link": 3
+        },
+        {
+          "name": "motion_data",
+          "type": "MOTION_DATA",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MOTION_DATA",
+          "type": "MOTION_DATA",
+          "links": [
+            17,
+            42
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MotionDiffSimpleSampler"
+      },
+      "widgets_values": [
+        "ddpm"
+      ]
+    },
+    {
+      "id": 1,
+      "type": "MotionDiffLoader",
+      "pos": [
+        1230,
+        -362
+      ],
+      "size": {
+        "0": 315,
+        "1": 78
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "MD_MODEL",
+          "type": "MD_MODEL",
+          "links": [
+            4
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "MD_CLIP",
+          "type": "MD_CLIP",
+          "links": [
+            1,
+            5
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MotionDiffLoader"
+      },
+      "widgets_values": [
+        "remodiffuse-human_ml3d"
+      ]
+    },
+    {
+      "id": 33,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        1823,
+        62
+      ],
+      "size": [
+        210,
+        436
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 46
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GIF",
+          "type": "GIF",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "Depth Map SMPL",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        20,
+        0,
+        "Depth_SMPL",
+        "video/h264-mp4",
+        false,
+        true,
+        null,
+        "/view?filename=Depth_SMPL_00022_.mp4&subfolder=&type=output&format=video%2Fh264-mp4"
+      ]
+    },
+    {
+      "id": 35,
+      "type": "MotionDataVisualizer",
+      "pos": [
+        1926,
+        -362
+      ],
+      "size": {
+        "0": 315,
+        "1": 178
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "motion_data",
+          "type": "MOTION_DATA",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            43
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MotionDataVisualizer"
+      },
+      "widgets_values": [
+        "pseudo-openpose",
+        7,
+        120,
+        -90,
+        4,
+        ""
+      ]
+    },
+    {
+      "id": 16,
+      "type": "SmplifyMotionData",
+      "pos": [
+        1579,
+        -373
+      ],
+      "size": {
+        "0": 315,
+        "1": 106
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "motion_data",
+          "type": "MOTION_DATA",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SMPL",
+          "type": "SMPL",
+          "links": [
+            44
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SmplifyMotionData"
+      },
+      "widgets_values": [
+        10,
+        0.5,
+        "SMPL_FEMALE.pkl"
+      ]
+    },
+    {
+      "id": 34,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        2048,
+        63
+      ],
+      "size": [
+        210,
+        436
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 40
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GIF",
+          "type": "GIF",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "Openpose SMPL",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        20,
+        0,
+        "OpenPose_SMPL",
+        "video/h264-mp4",
+        false,
+        true,
+        null,
+        "/view?filename=OpenPose_SMPL_00019_.mp4&subfolder=&type=output&format=video%2Fh264-mp4"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MotionCLIPTextEncode",
+      "pos": [
+        1186,
+        37
+      ],
+      "size": {
+        "0": 387.9890441894531,
+        "1": 96
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "md_clip",
+          "type": "MD_CLIP",
+          "link": 1
+        },
+        {
+          "name": "motion_data",
+          "type": "MOTION_DATA",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MD_CONDITIONING",
+          "type": "MD_CONDITIONING",
+          "links": [
+            3
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MotionCLIPTextEncode"
+      },
+      "widgets_values": [
+        "a person is running"
+      ]
+    },
+    {
+      "id": 38,
+      "type": "RenderSMPLMesh",
+      "pos": [
+        1576,
+        -228
+      ],
+      "size": {
+        "0": 315,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl",
+          "type": "SMPL",
+          "link": 44
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            45,
+            47
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "DEPTH_MAP",
+          "type": "IMAGE",
+          "links": [
+            46
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RenderSMPLMesh"
+      },
+      "widgets_values": [
+        false,
+        false,
+        0.75,
+        0,
+        0,
+        0,
+        "#FFFFFF"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "DWPreprocessor",
+      "pos": [
+        1919,
+        -129
+      ],
+      "size": {
+        "0": 315,
+        "1": 130
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 47
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            40
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DWPreprocessor"
+      },
+      "widgets_values": [
+        "disable",
+        "enable",
+        "disable",
+        1024
+      ]
+    },
+    {
+      "id": 36,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        2274,
+        69
+      ],
+      "size": [
+        210,
+        436
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 43
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GIF",
+          "type": "GIF",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "Original",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        20,
+        0,
+        "Pseudo_OpenPose_SMPL",
+        "video/h264-mp4",
+        false,
+        true,
+        null,
+        "/view?filename=Pseudo_OpenPose_SMPL_00025_.mp4&subfolder=&type=output&format=video%2Fh264-mp4"
+      ]
+    },
+    {
+      "id": 32,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        1595,
+        57
+      ],
+      "size": [
+        210,
+        436
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 45
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GIF",
+          "type": "GIF",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "SMPL",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": [
+        20,
+        0,
+        "SMPL",
+        "video/h264-mp4",
+        false,
+        true,
+        null,
+        "/view?filename=SMPL_00022_.mp4&subfolder=&type=output&format=video%2Fh264-mp4"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      1,
+      2,
+      0,
+      "MD_CLIP"
+    ],
+    [
+      2,
+      3,
+      0,
+      2,
+      1,
+      "MOTION_DATA"
+    ],
+    [
+      3,
+      2,
+      0,
+      4,
+      2,
+      "MD_CONDITIONING"
+    ],
+    [
+      4,
+      1,
+      0,
+      4,
+      0,
+      "MD_MODEL"
+    ],
+    [
+      5,
+      1,
+      1,
+      4,
+      1,
+      "MD_CLIP"
+    ],
+    [
+      6,
+      3,
+      0,
+      4,
+      3,
+      "MOTION_DATA"
+    ],
+    [
+      17,
+      4,
+      0,
+      16,
+      0,
+      "MOTION_DATA"
+    ],
+    [
+      40,
+      27,
+      0,
+      34,
+      0,
+      "IMAGE"
+    ],
+    [
+      42,
+      4,
+      0,
+      35,
+      0,
+      "MOTION_DATA"
+    ],
+    [
+      43,
+      35,
+      0,
+      36,
+      0,
+      "IMAGE"
+    ],
+    [
+      44,
+      16,
+      0,
+      38,
+      0,
+      "SMPL"
+    ],
+    [
+      45,
+      38,
+      0,
+      32,
+      0,
+      "IMAGE"
+    ],
+    [
+      46,
+      38,
+      1,
+      33,
+      0,
+      "IMAGE"
+    ],
+    [
+      47,
+      38,
+      0,
+      27,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

@@ -120,7 +120,6 @@ logs/
 
 
 # Visualization
-*.png
 *.gif
 *.jpg
 *.obj
