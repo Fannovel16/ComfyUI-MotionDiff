@@ -164,7 +164,7 @@ class SaveSMPL:
         return {
             "required": {
                 "smpl": ("SMPL", ),
-                "filename_prefix": ("STRING", {"default": "motiondiff"})
+                "filename_prefix": ("STRING", {"default": "motiondiff_pt"})
             }
         }
 

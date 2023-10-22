@@ -1,6 +1,6 @@
 {
-  "last_node_id": 43,
-  "last_link_id": 52,
+  "last_node_id": 44,
+  "last_link_id": 53,
   "nodes": [
     {
       "id": 3,
@@ -176,105 +176,6 @@
       ]
     },
     {
-      "id": 16,
-      "type": "SmplifyMotionData",
-      "pos": [
-        1579,
-        -373
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "motion_data",
-          "type": "MOTION_DATA",
-          "link": 17
-        }
-      ],
-      "outputs": [
-        {
-          "name": "SMPL",
-          "type": "SMPL",
-          "links": [
-            49,
-            50
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SmplifyMotionData"
-      },
-      "widgets_values": [
-        10,
-        0.5,
-        "SMPL_FEMALE.pkl"
-      ]
-    },
-    {
-      "id": 39,
-      "type": "SaveSMPL",
-      "pos": [
-        1983,
-        -373
-      ],
-      "size": {
-        "0": 315,
-        "1": 58
-      },
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "smpl",
-          "type": "SMPL",
-          "link": 49
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SaveSMPL"
-      },
-      "widgets_values": [
-        "motiondiff"
-      ]
-    },
-    {
-      "id": 40,
-      "type": "ExportSMPLTo3DSoftware",
-      "pos": [
-        1982,
-        -247
-      ],
-      "size": {
-        "0": 315,
-        "1": 82
-      },
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "smpl",
-          "type": "SMPL",
-          "link": 50
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ExportSMPLTo3DSoftware"
-      },
-      "widgets_values": [
-        "motiondiff",
-        "glb"
-      ]
-    },
-    {
       "id": 41,
       "type": "SMPLLoader",
       "pos": [
@@ -398,6 +299,105 @@
         null,
         "/view?filename=AnimateDiff_00001_.gif&subfolder=&type=output&format=image%2Fgif"
       ]
+    },
+    {
+      "id": 44,
+      "type": "ExportSMPLTo3DSoftware",
+      "pos": [
+        1977,
+        -265
+      ],
+      "size": {
+        "0": 315,
+        "1": 82
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl",
+          "type": "SMPL",
+          "link": 53
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ExportSMPLTo3DSoftware"
+      },
+      "widgets_values": [
+        "motiondiff_meshes",
+        "glb"
+      ]
+    },
+    {
+      "id": 39,
+      "type": "SaveSMPL",
+      "pos": [
+        1983,
+        -373
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl",
+          "type": "SMPL",
+          "link": 49
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveSMPL"
+      },
+      "widgets_values": [
+        "motiondiff_pt"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "SmplifyMotionData",
+      "pos": [
+        1579,
+        -373
+      ],
+      "size": {
+        "0": 315,
+        "1": 106
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "motion_data",
+          "type": "MOTION_DATA",
+          "link": 17
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SMPL",
+          "type": "SMPL",
+          "links": [
+            49,
+            53
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SmplifyMotionData"
+      },
+      "widgets_values": [
+        10,
+        0.5,
+        "SMPL_FEMALE.pkl"
+      ]
     }
   ],
   "links": [
@@ -466,14 +466,6 @@
       "SMPL"
     ],
     [
-      50,
-      16,
-      0,
-      40,
-      0,
-      "SMPL"
-    ],
-    [
       51,
       41,
       0,
@@ -488,6 +480,14 @@
       43,
       0,
       "IMAGE"
+    ],
+    [
+      53,
+      16,
+      0,
+      44,
+      0,
+      "SMPL"
     ]
   ],
   "groups": [],
