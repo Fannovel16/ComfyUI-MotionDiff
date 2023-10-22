@@ -156,11 +156,11 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(motion_tensor, yfov, move_x, move_y, move_z, draw_platform=True, depth_only=False, smpl_model_path=None):
+def render_from_smpl(thetas, yfov, move_x, move_y, move_z, draw_platform=True, depth_only=False, smpl_model_path=None):
     rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path)
     faces = rot2xyz.smpl_model.faces
 
-    vertices = rot2xyz(torch.tensor(motion_tensor).clone(), mask=None,
+    vertices = rot2xyz(thetas.clone().to(get_torch_device()).detach(), mask=None,
                                     pose_rep='rot6d', translation=True, glob=True,
                                     jointstype='vertices',
                                     vertstrans=True)

@@ -25,6 +25,9 @@ from mogen.smpl.render_mesh import render_from_smpl
 import gc
 from pathlib import Path
 from PIL import ImageColor
+import folder_paths
+from .smpl_nodes import NODE_CLASS_MAPPINGS as SMPL_NODE_CLASS_MAPPINGS
+from .smpl_nodes import NODE_DISPLAY_NAME_MAPPINGS as SMPL_NODE_DISPLAY_NAME_MAPPINGS
 
 def create_mdm_model(model_config):
     cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
@@ -263,112 +266,7 @@ class MotionDataVisualizer:
             np_image = np.array(pil_image.convert("RGB")).astype(np.float32) / 255.0
             tensor_frames.append(torch.from_numpy(np_image))
         return (torch.stack(tensor_frames, dim=0), )
-
-smpl_model_dicts = None
-class SmplifyMotionData:
-    @classmethod
-    def INPUT_TYPES(s):
-        global smpl_model_dicts
-        smpl_model_dicts = get_smpl_models_dict()
-        return {
-            "required": {
-                "motion_data": ("MOTION_DATA", ),
-                "num_smplify_iters": ("INT", {"min": 10, "max": 1000, "default": 50}),
-                "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-1}),
-                "smpl_model": (list(smpl_model_dicts.keys()), {"default": "SMPL_NEUTRAL.pkl"})
-            }
-        }
-
-    RETURN_TYPES = ("SMPL",)
-    CATEGORY = "MotionDiff/smpl"
-    FUNCTION = "convent"
     
-    def convent(self, motion_data, num_smplify_iters, smplify_step_size, smpl_model):
-        global smpl_model_dicts
-        if smpl_model_dicts is None:
-            smpl_model_dicts = get_smpl_models_dict()
-        smpl_model_path = smpl_model_dicts[smpl_model]
-        joints = motion_data_to_joints(motion_data["motion"])
-        with torch.inference_mode(False):
-            convention = joints2smpl(
-                num_frames=joints.shape[0], 
-                device=get_torch_device(), 
-                num_smplify_iters=num_smplify_iters, 
-                smplify_step_size=smplify_step_size,
-                smpl_model_path = smpl_model_path
-            )
-            motion_tensor, meta = convention.joint2smpl(joints)
-        motion_tensor = motion_tensor.cpu().detach()
-        for key in meta:
-            meta[key] = meta[key].cpu().detach()
-        gc.collect()
-        soft_empty_cache()
-        return ((smpl_model_path, motion_tensor, meta), ) #Caching
-
-class RenderOpenPoseFromSMPL:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "smpl": ("SMPL", )
-            }
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    CATEGORY = "MotionDiff/smpl"
-    FUNCTION = "convent"
-    
-    def convent(self, smpl):
-        kps = smpl[1]["pose"]
-        kp3d_openpose, _ = convert_kps(kps, src='smpl_45', dst='openpose_25')
-        cv2_frames = visualize_kp3d(kp3d_openpose.cpu().numpy(), data_source='openpose_25', return_array=True, resolution=(1024, 1024))
-        return (torch.from_numpy(cv2_frames), )
-
-class RenderSMPLMesh:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "smpl": ("SMPL", ),
-                "draw_platform": ("BOOLEAN", {"default": False}),
-                "depth_only": ("BOOLEAN", {"default": False}),
-                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.05}),
-                "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
-                "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
-                "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
-                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False})
-            }
-        }
-
-    RETURN_TYPES = ("IMAGE", "IMAGE")
-    RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
-    CATEGORY = "MotionDiff/smpl"
-    FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color):
-        smpl_model_path, motion_tensor, _ = smpl
-        color_frames, depth_frames = render_from_smpl(
-            motion_tensor.to(get_torch_device()),
-            yfov, move_x, move_y, move_z, draw_platform,depth_only, 
-            smpl_model_path=smpl_model_path
-        )
-        bg_color = ImageColor.getcolor(background_hex_color, "RGB")
-        color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
-        white_mask = [
-            (color_frames[..., 0] == 1.) & 
-            (color_frames[..., 1] == 1.) & 
-            (color_frames[..., 2] == 1.)
-        ]
-        color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
-
-        #Normalize to [0, 1]
-        normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
-        #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
-        #Ref: https://github.com/mmatl/pyrender/issues/10#issuecomment-468995891
-        normalized_depth[normalized_depth != 0] = 1 - normalized_depth[normalized_depth != 0]
-        #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
-        depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
-        depth_frames = torch.stack(depth_frames, dim=0)
-        return (color_frames, depth_frames,)
 
 NODE_CLASS_MAPPINGS = {
     "MotionDiffLoader": MotionDiffLoader,
@@ -376,7 +274,14 @@ NODE_CLASS_MAPPINGS = {
     "MotionDiffSimpleSampler": MotionDiffSimpleSampler,
     "EmptyMotionData": EmptyMotionData,
     "MotionDataVisualizer": MotionDataVisualizer,
-    "SmplifyMotionData": SmplifyMotionData,
-    "RenderSMPLMesh": RenderSMPLMesh
-    #"RenderOpenPoseFromSMPL": RenderOpenPoseFromSMPL
+    **SMPL_NODE_CLASS_MAPPINGS
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "MotionDiffLoader": "MotionDiff Loader",
+    "MotionCLIPTextEncode": "MotionCLIP Text Encode",
+    "MotionDiffSimpleSampler": "MotionDiff Simple Sampler",
+    "EmptyMotionData": "Empty Motion Data",
+    "MotionDataVisualizer": "Motion Data Visualizer",
+    **SMPL_NODE_DISPLAY_NAME_MAPPINGS
 }
