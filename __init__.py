@@ -14,18 +14,12 @@ from mogen.utils.plot_utils import (
     plot_3d_motion,
     t2m_kinematic_chain
 )
-from comfy.model_management import get_torch_device, soft_empty_cache
-from .md_config import get_model_dataset_dict, get_smpl_models_dict
+from comfy.model_management import get_torch_device
+from .md_config import get_model_dataset_dict
 from .utils import *
-from mogen.smpl.simplify_loc2rot import joints2smpl
-from mogen.smpl.rotation2xyz import Rotation2xyz
 #from custom_mmpkg.custom_mmhuman3d.core.conventions.keypoints_mapping import convert_kps
 #from custom_mmpkg.custom_mmhuman3d.core.visualization.visualize_keypoints3d import visualize_kp3d
-from mogen.smpl.render_mesh import render_from_smpl
-import gc
 from pathlib import Path
-from PIL import ImageColor
-import folder_paths
 from .smpl_nodes import NODE_CLASS_MAPPINGS as SMPL_NODE_CLASS_MAPPINGS
 from .smpl_nodes import NODE_DISPLAY_NAME_MAPPINGS as SMPL_NODE_DISPLAY_NAME_MAPPINGS
 
@@ -135,7 +129,7 @@ class MotionDiffLoader:
             "required": {
                 "model_dataset": (
                     list(model_dataset_dict.keys()), 
-                    { "default": "remodiffuse-human_ml3d" }
+                    { "default": "-human_ml3d" }
                 )
             },
         }
@@ -195,7 +189,7 @@ class MotionDiffSimpleSampler:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "sampler_name": (["ddpm", "ddim"], ),
+                "sampler_name": (["ddpm", "ddim"], {"default": "ddim"}),
                 "md_model": ("MD_MODEL", ),
                 "md_clip": ("MD_CLIP", ),
                 "md_cond": ("MD_CONDITIONING", ),

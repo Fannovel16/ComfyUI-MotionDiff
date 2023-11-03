@@ -2,6 +2,10 @@
 Implementation of MDM, MotionDiffuse and ReMoDiffuse into ComfyUI
 
 # Installation:
+## Installing prerequisites on Ubuntu (and maybe other Linux distros)
+```
+sudo apt-get install libglfw3-dev libgles2-mesa-dev freeglut3-dev
+```
 ## Using ComfyUI Manager (recommended):
 Install [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) and do steps introduced there to install this repo.
 
