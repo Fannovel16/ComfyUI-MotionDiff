@@ -96,7 +96,7 @@ class RenderSMPLMesh:
             }
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
@@ -115,7 +115,10 @@ class RenderSMPLMesh:
             (color_frames[..., 2] == 1.)
         ]
         color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
-
+        white_mask_tensor = torch.stack(white_mask, dim=0)
+        white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
+        white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
+        print(white_mask_tensor.shape)
         #Normalize to [0, 1]
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
@@ -124,7 +127,7 @@ class RenderSMPLMesh:
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
         depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
-        return (color_frames, depth_frames,)
+        return (color_frames, depth_frames, white_mask_tensor,)
 
 class SMPLLoader:
     @classmethod
