@@ -11,11 +11,14 @@ if os.name == 'posix' and "DISPLAY" not in os.environ:
 import torch
 from mogen.smpl.simplify_loc2rot import joints2smpl
 import pyrender
+from pyrender.shader_program import ShaderProgramCache
 from shapely import geometry
 import trimesh
 from pyrender.constants import RenderFlags
 from comfy.model_management import get_torch_device
 from tqdm import tqdm
+
+shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
 class WeakPerspectiveCamera(pyrender.Camera):
     def __init__(self,
@@ -156,7 +159,7 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(thetas, yfov, move_x, move_y, move_z, draw_platform=True, depth_only=False, smpl_model_path=None):
+def render_from_smpl(thetas, yfov, move_x, move_y, move_z, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None):
     rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path)
     faces = rot2xyz.smpl_model.faces
 
@@ -262,12 +265,15 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, draw_platform=True, d
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
             color = np.zeros([960, 960, 3])
         else:
-            color, depth = r.render(scene, flags=RenderFlags.RGBA)
+            if normals:
+                r._renderer._program_cache = ShaderProgramCache(shader_dir=shader_dir)
+            color, depth = r.render(scene, flags=RenderFlags.RGBA)       
+            
         # Image.fromarray(color).save(outdir+name+'_'+str(i)+'.png')
 
         vid.append(color)
         vid_depth.append(depth)
 
-        r.delete()
+        r = None
 
     return np.stack(vid, axis=0), np.stack(vid_depth, axis=0)

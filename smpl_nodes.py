@@ -90,6 +90,9 @@ class RenderSMPLMesh:
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False})
+            },
+            "optional": {
+                "normals": ("BOOLEAN", {"default": False}),
             }
         }
 
@@ -97,11 +100,11 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color):
+    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color, normals=False):
         smpl_model_path, thetas, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             thetas.to(get_torch_device()),
-            yfov, move_x, move_y, move_z, draw_platform,depth_only, 
+            yfov, move_x, move_y, move_z, draw_platform,depth_only, normals,
             smpl_model_path=smpl_model_path
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
