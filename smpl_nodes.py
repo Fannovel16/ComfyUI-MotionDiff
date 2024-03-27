@@ -85,7 +85,7 @@ class RenderSMPLMesh:
                 "smpl": ("SMPL", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.05}),
+                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.01}),
                 "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
