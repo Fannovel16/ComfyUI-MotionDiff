@@ -26,7 +26,7 @@ class SmplifyMotionData:
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
-                "num_smplify_iters": ("INT", {"min": 10, "max": 1000, "default": 50}),
+                "num_smplify_iters": ("INT", {"min": 1, "max": 1000, "default": 50}),
                 "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-1}),
                 "smpl_model": (list(smpl_model_dicts.keys()), {"default": "SMPL_NEUTRAL.pkl"})
             }
