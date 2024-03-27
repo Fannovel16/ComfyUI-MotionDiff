@@ -256,7 +256,6 @@ class SMPLShapeParameters:
         }
 
     RETURN_TYPES = ("SMPL",)
-    RETURN_NAMES = ("shape_parameters",)
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "setparams"
     def setparams(self, smpl, size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms):
