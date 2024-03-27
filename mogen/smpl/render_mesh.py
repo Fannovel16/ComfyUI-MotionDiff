@@ -266,24 +266,24 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
     #Build the scene
     camera = pyrender.PerspectiveCamera(yfov)
     bg_color = [1, 1, 1, 0.8]
-    
+    scene = pyrender.Scene(bg_color=bg_color, ambient_light=(0.4, 0.4, 0.4))
+    scene.add(camera, pose=camera_pose)
     if draw_platform:
             scene.add(polygon_render, pose=platform_pose)
     if not normals:    
         for pose in light_poses:
             scene.add(light, pose=pose)
-    
     # Render loop
     vid = []
     vid_depth = []
     print("Rendering SMPL human mesh...")
     pbar = comfy.utils.ProgressBar(frames)
     for i in tqdm(range(frames)):
-        scene = pyrender.Scene(bg_color=bg_color, ambient_light=(0.4, 0.4, 0.4))
-        scene.add(camera, pose=camera_pose)
+        
         mesh = Trimesh(vertices=vertices[0, :, :, i].squeeze().tolist(), faces=faces)
         mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
-        scene.add(mesh)
+        mesh_node = pyrender.Node(mesh=mesh)
+        scene.add_node(mesh_node)
 
         if depth_only:
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
@@ -293,7 +293,9 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
 
         vid.append(color)
         vid_depth.append(depth)
+        scene.remove_node(mesh_node)
         pbar.update(1)
+        
     r = None
 
     return np.stack(vid, axis=0), np.stack(vid_depth, axis=0)
