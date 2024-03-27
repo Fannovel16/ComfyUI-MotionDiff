@@ -96,7 +96,6 @@ class RenderSMPLMesh:
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),
-                "shape_parameters": ("BETAS", )
             }
         }
 
@@ -104,12 +103,12 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False, shape_parameters=None):
+    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False):
         smpl_model_path, thetas, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             thetas.to(get_torch_device()),
             yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform,depth_only, normals,
-            smpl_model_path=smpl_model_path, shape_parameters=shape_parameters
+            smpl_model_path=smpl_model_path, shape_parameters=smpl[2].get("shape_parameters", None)
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
@@ -241,6 +240,7 @@ class SMPLShapeParameters:
     def INPUT_TYPES(s):
         return {
             "required": {
+                "smpl": ("SMPL", ),
                 "size": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
                 "thickness": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
                 "upper_body_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
@@ -255,13 +255,14 @@ class SMPLShapeParameters:
             },
         }
 
-    RETURN_TYPES = ("BETAS",)
+    RETURN_TYPES = ("SMPL",)
     RETURN_NAMES = ("shape_parameters",)
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "setparams"
-    def setparams(self, size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms):
+    def setparams(self, smpl, size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms):
         shape_parameters = [size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms]
-        return (shape_parameters,)
+        smpl[2]["shape_parameters"] = shape_parameters
+        return (smpl,)
     
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
