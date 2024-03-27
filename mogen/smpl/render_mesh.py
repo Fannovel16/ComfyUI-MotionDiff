@@ -159,7 +159,7 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(thetas, yfov, move_x, move_y, move_z, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None):
+def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None):
     rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path)
     faces = rot2xyz.smpl_model.faces
 
@@ -238,22 +238,49 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, draw_platform=True, d
 
         c = -np.pi / 6
 
-        x_translation = move_x  # Your X-axis translation value
-        y_translation = move_y # Your Y-axis translation value
-        z_translation = move_z  # Your Z-axis translation value
+        x_translation = move_x  #X-axis translation value
+        y_translation = move_y # Y-axis translation value
+        z_translation = move_z  # Z-axis translation value
 
         initial_pos = [(minx+maxx).cpu().numpy()/2 + x_translation,
                     y_translation,
                     max(4, minz.cpu().numpy()+(1.5-MINS[1].cpu().numpy())*2, (maxx-minx).cpu().numpy()) + z_translation]
 
-        pose = [[ 1, 0, 0, initial_pos[0]],
-                [ 0, np.cos(c), -np.sin(c), 1.5 + initial_pos[1]],
-                [ 0, np.sin(c), np.cos(c), initial_pos[2]],
-                [ 0, 0, 0, 1]
-            ]
+        alpha = np.radians(x_rot)
+        beta = np.radians(y_rot)
+        gamma = np.radians(z_rot)
 
-        # Add the camera to the scene with the modified pose
-        scene.add(camera, pose=pose)
+        # Rotation matrix around X-axis
+        R_x = [[1, 0, 0, 0],
+            [0, np.cos(alpha), -np.sin(alpha), 0],
+            [0, np.sin(alpha), np.cos(alpha), 0],
+            [0, 0, 0, 1]]
+
+        # Rotation matrix around Y-axis
+        R_y = [[np.cos(beta), 0, np.sin(beta), 0],
+            [0, 1, 0, 0],
+            [-np.sin(beta), 0, np.cos(beta), 0],
+            [0, 0, 0, 1]]
+
+        # Rotation matrix around Z-axis
+        R_z = [[np.cos(gamma), -np.sin(gamma), 0, 0],
+            [np.sin(gamma), np.cos(gamma), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]]
+
+        # Combine rotations, order of multiplication depends on the desired rotation order
+        R = np.dot(R_z, np.dot(R_y, R_x))
+
+        # Now, R is a 4x4 matrix that represents the rotation around X, Y, and Z
+
+        # Translation vector
+        T = [initial_pos[0], initial_pos[1], initial_pos[2], 1]
+
+        # Combine the rotation and translation into the final transformation matrix
+        pose = np.dot(R, np.array([[1, 0, 0, T[0]],
+                                [0, 1, 0, T[1]],
+                                [0, 0, 1, T[2]],
+                                [0, 0, 0, 1]]))
 
         # Add the camera to the scene with the modified pose
         scene.add(camera, pose=pose)
