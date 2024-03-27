@@ -14,8 +14,8 @@ class Rotation2xyz:
         self.smpl_model = SMPL(smpl_model_path).eval().to(device)
 
     def __call__(self, x, mask, pose_rep, translation, glob,
-                 jointstype, vertstrans, betas=None, beta=0,
-                 glob_rot=None, get_rotations_back=False, **kwargs):
+                 jointstype, vertstrans, beta=0,
+                 glob_rot=None, get_rotations_back=False, betas=None, **kwargs):
         if pose_rep == "xyz":
             return x
 

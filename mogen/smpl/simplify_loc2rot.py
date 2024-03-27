@@ -8,7 +8,7 @@ from .joints2smpl.src.smplify import SMPLify3D
 from tqdm import tqdm
 from mogen.smpl import rotation_conversions as geometry
 import argparse
-
+import comfy.utils
 
 class joints2smpl:
 
@@ -49,9 +49,11 @@ class joints2smpl:
         # print_batch('', motions)
         n_samples = motions['motion'].shape[0]
         all_thetas = []
+        pbar = comfy.utils.ProgressBar(n_samples)
         for sample_i in tqdm(range(n_samples)):
             thetas, _ = self.joint2smpl(motions['motion'][sample_i].transpose(2, 0, 1))  # [nframes, njoints, 3]
             all_thetas.append(thetas.cpu().numpy())
+            pbar.update(1)
         motions['motion'] = np.concatenate(all_thetas, axis=0)
         print('motions', motions['motion'].shape)
 

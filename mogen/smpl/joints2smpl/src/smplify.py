@@ -13,6 +13,7 @@ from customloss import (camera_fitting_loss,
 from prior import MaxMixturePrior
 from mogen.smpl.joints2smpl.src import config
 from tqdm import tqdm
+import comfy.utils
 
 
 @torch.no_grad()
@@ -165,6 +166,7 @@ class SMPLify3D():
         if self.use_lbfgs:
             camera_optimizer = torch.optim.LBFGS(camera_opt_params, max_iter=self.num_iters,
                                                  lr=self.step_size, line_search_fn='strong_wolfe')
+            pbar_comfy = comfy.utils.ProgressBar(10)
             pbar = tqdm(range(10))
             for i in pbar:
                 def closure():
@@ -181,11 +183,13 @@ class SMPLify3D():
                                                   init_cam_t, j3d, self.joints_category)
                     loss.backward()
                     pbar.set_postfix(loss=loss.item())
+                    
                     return loss
-
+                pbar_comfy.update(1)
                 camera_optimizer.step(closure)
         else:
             camera_optimizer = torch.optim.Adam(camera_opt_params, lr=self.step_size, betas=(0.9, 0.999))
+            pbar_comfy = comfy.utils.ProgressBar(20)
             pbar = tqdm(range(20))
             for i in pbar:
                 smpl_output = self.smpl(global_orient=global_orient,
@@ -199,6 +203,7 @@ class SMPLify3D():
                 loss.backward()
                 camera_optimizer.step()
                 pbar.set_postfix(loss=loss.item())
+                pbar_comfy.update(1)
 
         # Fix camera translation after optimizing camera
         # --------Step 2: Optimize body joints --------------------------
@@ -219,6 +224,7 @@ class SMPLify3D():
         if self.use_lbfgs:
             body_optimizer = torch.optim.LBFGS(body_opt_params, max_iter=self.num_iters,
                                                lr=self.step_size, line_search_fn='strong_wolfe')
+            pbar_comfy = comfy.utils.ProgressBar(self.num_iters)
             pbar = tqdm(range(self.num_iters))
             for i in pbar:
                 def closure():
@@ -240,11 +246,12 @@ class SMPLify3D():
                     loss.backward()
                     pbar.set_postfix(loss=loss.item())
                     return loss
-
+                pbar_comfy.update(1)
                 body_optimizer.step(closure)
         else:
             body_optimizer = torch.optim.Adam(body_opt_params, lr=self.step_size, betas=(0.9, 0.999))
             pbar = tqdm(range(self.num_iters))
+            pbar_comfy = comfy.utils.ProgressBar(self.num_iters)
             for i in pbar:
                 smpl_output = self.smpl(global_orient=global_orient,
                                         body_pose=body_pose,
@@ -262,6 +269,7 @@ class SMPLify3D():
                 body_optimizer.zero_grad()
                 loss.backward()
                 body_optimizer.step()
+                pbar_comfy.update(1)
 
         # Get final loss value
         with torch.no_grad():

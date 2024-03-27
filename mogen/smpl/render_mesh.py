@@ -9,6 +9,7 @@ if os.name == 'posix' and "DISPLAY" not in os.environ:
     os.environ['PYOPENGL_PLATFORM'] = "egl"
 
 import torch
+import comfy.utils
 from mogen.smpl.simplify_loc2rot import joints2smpl
 import pyrender
 from pyrender.shader_program import ShaderProgramCache
@@ -159,14 +160,21 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None):
+def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None, shape_parameters=None):
+    if shape_parameters is not None:
+        betas_single = torch.tensor([shape_parameters], dtype=torch.float32)
+        batch_size = thetas.shape[3]  
+        betas_batch = betas_single.repeat(batch_size, 1)  # Replicates the single sample across the batch
+        betas_batch = betas_batch.to(device=get_torch_device())
+    else:
+        betas_batch = None
     rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path)
     faces = rot2xyz.smpl_model.faces
 
     vertices = rot2xyz(thetas.clone().to(get_torch_device()).detach(), mask=None,
                                     pose_rep='rot6d', translation=True, glob=True,
                                     jointstype='vertices',
-                                    vertstrans=True)
+                                    vertstrans=True, betas=betas_batch)
 
     frames = vertices.shape[3] # shape: 1, nb_frames, 3, nb_joints
     print (vertices.shape)
@@ -184,6 +192,7 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
     vid = []
     vid_depth = []
     print("Rendering SMPL human mesh...")
+    pbar = comfy.utils.ProgressBar(frames)
     for i in tqdm(range(frames)):
 
         mesh = Trimesh(vertices=vertices[0, :, :, i].squeeze().tolist(), faces=faces)
@@ -300,7 +309,7 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
 
         vid.append(color)
         vid_depth.append(depth)
-
         r = None
+        pbar.update(1)
 
     return np.stack(vid, axis=0), np.stack(vid_depth, axis=0)

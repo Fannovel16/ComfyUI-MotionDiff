@@ -96,6 +96,7 @@ class RenderSMPLMesh:
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),
+                "shape_parameters": ("BETAS", )
             }
         }
 
@@ -103,12 +104,12 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False):
+    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False, shape_parameters=None):
         smpl_model_path, thetas, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             thetas.to(get_torch_device()),
             yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform,depth_only, normals,
-            smpl_model_path=smpl_model_path
+            smpl_model_path=smpl_model_path, shape_parameters=shape_parameters
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
@@ -121,7 +122,6 @@ class RenderSMPLMesh:
         white_mask_tensor = torch.stack(white_mask, dim=0)
         white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
         white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
-        print(white_mask_tensor.shape)
         #Normalize to [0, 1]
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
@@ -236,12 +236,40 @@ class ExportSMPLTo3DSoftware:
             trimesh.export(os.path.join(folder, f'{i}.{format}'))
         return {}
 
+class SMPLShapeParameters:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "size": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "thickness": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "upper_body_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "lower_body_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "muscle_mass": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "legs": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "chest": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "waist_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "waist_width": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "arms": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+   
+            },
+        }
+
+    RETURN_TYPES = ("BETAS",)
+    RETURN_NAMES = ("shape_parameters",)
+    CATEGORY = "MotionDiff/smpl"
+    FUNCTION = "setparams"
+    def setparams(self, size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms):
+        shape_parameters = [size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms]
+        return (shape_parameters,)
+    
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
     "RenderSMPLMesh": RenderSMPLMesh,
     "SMPLLoader": SMPLLoader,
     "SaveSMPL": SaveSMPL,
-    "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware
+    "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware,
+    "SMPLShapeParameters": SMPLShapeParameters
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -249,5 +277,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "RenderSMPLMesh": "Render SMPL Mesh",
     "SMPLLoader": "SMPL Loader",
     "SaveSMPL": "Save SMPL",
-    "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software"
+    "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software",
+    "SMPLShapeParameters": "SMPL Shape Parameters"
 }
