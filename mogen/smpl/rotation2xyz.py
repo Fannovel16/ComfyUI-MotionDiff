@@ -8,14 +8,15 @@ JOINTSTYPES = ["a2m", "a2mpl", "smpl", "vibe", "vertices"]
 
 
 class Rotation2xyz:
-    def __init__(self, device, dataset='amass', smpl_model_path=None):
+    def __init__(self, device, dataset='amass', smpl_model_path=None, betas=None):
         self.device = device
         self.dataset = dataset
         self.smpl_model = SMPL(smpl_model_path).eval().to(device)
+        self.betas = betas
 
     def __call__(self, x, mask, pose_rep, translation, glob,
                  jointstype, vertstrans, beta=0,
-                 glob_rot=None, get_rotations_back=False, betas=None, **kwargs):
+                 glob_rot=None, get_rotations_back=False, **kwargs):
         if pose_rep == "xyz":
             return x
 
@@ -57,12 +58,12 @@ class Rotation2xyz:
             global_orient = rotations[:, 0]
             rotations = rotations[:, 1:]
 
-        if betas is None:
-            betas = torch.zeros([rotations.shape[0], self.smpl_model.num_betas],
+        if self.betas is None:
+            self.betas = torch.zeros([rotations.shape[0], self.smpl_model.num_betas],
                                 dtype=rotations.dtype, device=rotations.device)
-            betas[:, 1] = beta
+            self.betas[:, 1] = beta
             # import ipdb; ipdb.set_trace()
-        out = self.smpl_model(body_pose=rotations, global_orient=global_orient, betas=betas)
+        out = self.smpl_model(body_pose=rotations, global_orient=global_orient, betas=self.betas)
 
         # get the desirable joints
         joints = out[jointstype]

@@ -162,19 +162,20 @@ def render(motions):
 
 def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None, shape_parameters=None):
     if shape_parameters is not None:
-        betas_single = torch.tensor([shape_parameters], dtype=torch.float32)
+        betas_tensor = torch.tensor([shape_parameters], dtype=torch.float32)
         batch_size = thetas.shape[3]  
-        betas_batch = betas_single.repeat(batch_size, 1)  # Replicates the single sample across the batch
+        betas_batch = betas_tensor.repeat(batch_size, 1)  # Replicates the single sample across the batch
         betas_batch = betas_batch.to(device=get_torch_device())
     else:
         betas_batch = None
-    rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path)
+        
+    rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path, betas=betas_batch)
     faces = rot2xyz.smpl_model.faces
 
     vertices = rot2xyz(thetas.clone().to(get_torch_device()).detach(), mask=None,
                                     pose_rep='rot6d', translation=True, glob=True,
                                     jointstype='vertices',
-                                    vertstrans=True, betas=betas_batch)
+                                    vertstrans=True)
 
     frames = vertices.shape[3] # shape: 1, nb_frames, 3, nb_joints
     print (vertices.shape)
