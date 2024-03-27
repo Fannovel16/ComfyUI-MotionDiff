@@ -90,18 +90,21 @@ class RenderSMPLMesh:
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False})
+            },
+            "optional": {
+                "normals": ("BOOLEAN", {"default": False}),
             }
         }
 
-    RETURN_TYPES = ("IMAGE", "IMAGE")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color):
+    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color, normals=False):
         smpl_model_path, thetas, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             thetas.to(get_torch_device()),
-            yfov, move_x, move_y, move_z, draw_platform,depth_only, 
+            yfov, move_x, move_y, move_z, draw_platform,depth_only, normals,
             smpl_model_path=smpl_model_path
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
@@ -112,7 +115,10 @@ class RenderSMPLMesh:
             (color_frames[..., 2] == 1.)
         ]
         color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
-
+        white_mask_tensor = torch.stack(white_mask, dim=0)
+        white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
+        white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
+        print(white_mask_tensor.shape)
         #Normalize to [0, 1]
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
@@ -121,7 +127,7 @@ class RenderSMPLMesh:
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
         depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
-        return (color_frames, depth_frames,)
+        return (color_frames, depth_frames, white_mask_tensor,)
 
 class SMPLLoader:
     @classmethod
