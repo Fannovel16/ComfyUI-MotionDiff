@@ -160,7 +160,7 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None, shape_parameters=None):
+def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, frame_width, frame_height, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None, shape_parameters=None):
     if shape_parameters is not None:
         betas_tensor = torch.tensor([shape_parameters], dtype=torch.float32)
         batch_size = thetas.shape[3]  
@@ -296,11 +296,11 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
         scene.add(camera, pose=pose)
         
         # render scene
-        r = pyrender.OffscreenRenderer(960, 960)
+        r = pyrender.OffscreenRenderer(frame_width, frame_height)
 
         if depth_only:
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
-            color = np.zeros([960, 960, 3])
+            color = np.zeros([frame_width, frame_height, 3])
         else:
             if normals:
                 r._renderer._program_cache = ShaderProgramCache(shader_dir=shader_dir)

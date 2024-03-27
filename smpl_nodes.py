@@ -92,7 +92,9 @@ class RenderSMPLMesh:
                 "rotate_x": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
                 "rotate_y": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
                 "rotate_z": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
-                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False})
+                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False}),
+                "frame_width": ("INT", {"default": 960, "min": 0, "max": 4096, "step": 1}),
+                "frame_height": ("INT", {"default": 960, "min": 0, "max": 4096, "step": 1}),
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),
@@ -103,11 +105,11 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False):
+    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, frame_width, frame_height, draw_platform, depth_only, background_hex_color, normals=False):
         smpl_model_path, thetas, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             thetas.to(get_torch_device()),
-            yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform,depth_only, normals,
+            yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, frame_width, frame_height, draw_platform,depth_only, normals,
             smpl_model_path=smpl_model_path, shape_parameters=smpl[2].get("shape_parameters", None)
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
@@ -251,7 +253,6 @@ class SMPLShapeParameters:
                 "waist_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
                 "waist_width": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
                 "arms": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
-   
             },
         }
 
