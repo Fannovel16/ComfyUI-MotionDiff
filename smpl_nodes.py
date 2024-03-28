@@ -26,7 +26,7 @@ class SmplifyMotionData:
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
-                "num_smplify_iters": ("INT", {"min": 10, "max": 1000, "default": 50}),
+                "num_smplify_iters": ("INT", {"min": 1, "max": 1000, "default": 50}),
                 "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-1}),
                 "smpl_model": (list(smpl_model_dicts.keys()), {"default": "SMPL_NEUTRAL.pkl"})
             }
@@ -85,11 +85,16 @@ class RenderSMPLMesh:
                 "smpl": ("SMPL", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.05}),
+                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.01}),
                 "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
-                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False})
+                "rotate_x": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
+                "rotate_y": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
+                "rotate_z": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
+                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False}),
+                "frame_width": ("INT", {"default": 960, "min": 0, "max": 4096, "step": 1}),
+                "frame_height": ("INT", {"default": 960, "min": 0, "max": 4096, "step": 1}),
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),
@@ -100,12 +105,12 @@ class RenderSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl, yfov, move_x, move_y, move_z, draw_platform, depth_only, background_hex_color, normals=False):
+    def render(self, smpl, yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, frame_width, frame_height, draw_platform, depth_only, background_hex_color, normals=False):
         smpl_model_path, thetas, _ = smpl
         color_frames, depth_frames = render_from_smpl(
             thetas.to(get_torch_device()),
-            yfov, move_x, move_y, move_z, draw_platform,depth_only, normals,
-            smpl_model_path=smpl_model_path
+            yfov, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, frame_width, frame_height, draw_platform,depth_only, normals,
+            smpl_model_path=smpl_model_path, shape_parameters=smpl[2].get("shape_parameters", None)
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
@@ -118,7 +123,6 @@ class RenderSMPLMesh:
         white_mask_tensor = torch.stack(white_mask, dim=0)
         white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
         white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
-        print(white_mask_tensor.shape)
         #Normalize to [0, 1]
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
@@ -233,12 +237,40 @@ class ExportSMPLTo3DSoftware:
             trimesh.export(os.path.join(folder, f'{i}.{format}'))
         return {}
 
+class SMPLShapeParameters:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "smpl": ("SMPL", ),
+                "size": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "thickness": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "upper_body_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "lower_body_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "muscle_mass": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "legs": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "chest": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "waist_height": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "waist_width": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+                "arms": ("FLOAT", {"default": 0, "min": -100, "max": 100, "step": 0.01}),
+            },
+        }
+
+    RETURN_TYPES = ("SMPL",)
+    CATEGORY = "MotionDiff/smpl"
+    FUNCTION = "setparams"
+    def setparams(self, smpl, size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms):
+        shape_parameters = [size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms]
+        smpl[2]["shape_parameters"] = shape_parameters
+        return (smpl,)
+    
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
     "RenderSMPLMesh": RenderSMPLMesh,
     "SMPLLoader": SMPLLoader,
     "SaveSMPL": SaveSMPL,
-    "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware
+    "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware,
+    "SMPLShapeParameters": SMPLShapeParameters
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -246,5 +278,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "RenderSMPLMesh": "Render SMPL Mesh",
     "SMPLLoader": "SMPL Loader",
     "SaveSMPL": "Save SMPL",
-    "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software"
+    "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software",
+    "SMPLShapeParameters": "SMPL Shape Parameters"
 }

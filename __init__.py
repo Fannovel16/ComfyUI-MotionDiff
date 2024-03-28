@@ -44,6 +44,7 @@ class MotionDiffModelWrapper(torch.nn.Module): #Anything beside CLIP (mdm.model)
         sample_idx = kwargs.get('sample_idx', None)
         clip_feat = kwargs.get('clip_feat', None)
         sampler = kwargs.get('sampler', 'ddpm')
+        seed = kwargs.get('seed', None)
         B, T = motion.shape[:2]
 
         dim_pose = kwargs['motion'].shape[-1]
@@ -58,6 +59,7 @@ class MotionDiffModelWrapper(torch.nn.Module): #Anything beside CLIP (mdm.model)
                 clip_denoised=False,
                 progress=False,
                 model_kwargs=model_kwargs,
+                seed=seed,
                 **inference_kwargs
             )
         else:
@@ -68,6 +70,7 @@ class MotionDiffModelWrapper(torch.nn.Module): #Anything beside CLIP (mdm.model)
                 progress=False,
                 model_kwargs=model_kwargs,
                 eta=0,
+                seed=seed,
                 **inference_kwargs
             )
         if getattr(clip, "post_process") is not None:
@@ -193,7 +196,8 @@ class MotionDiffSimpleSampler:
                 "md_model": ("MD_MODEL", ),
                 "md_clip": ("MD_CLIP", ),
                 "md_cond": ("MD_CONDITIONING", ),
-                "motion_data": ("MOTION_DATA",)
+                "motion_data": ("MOTION_DATA",),
+                "seed": ("INT", {"default": 123,"min": 0, "max": 0xffffffffffffffff, "step": 1}),
             }
         }
 
@@ -201,7 +205,7 @@ class MotionDiffSimpleSampler:
     CATEGORY = "MotionDiff"
     FUNCTION = "sample"
 
-    def sample(self, sampler_name, md_model: MotionDiffModelWrapper, md_clip, md_cond, motion_data):
+    def sample(self, sampler_name, md_model: MotionDiffModelWrapper, md_clip, md_cond, motion_data, seed):
         md_model.to(get_torch_device())
         md_clip.to(get_torch_device())
         for key in motion_data:
@@ -211,6 +215,7 @@ class MotionDiffSimpleSampler:
             **motion_data,
             'inference_kwargs': {},
             'sampler': sampler_name,
+            'seed': seed
         }
 
         with torch.no_grad():

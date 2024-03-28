@@ -11,7 +11,7 @@ import torch as th
 
 from abc import ABC, abstractmethod
 import torch.distributed as dist
-
+import comfy.utils
 
 def create_named_schedule_sampler(name, diffusion):
     """
@@ -674,6 +674,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
+        seed=None,
         device=None,
         pre_seq=None,
         transl_req=None,
@@ -707,6 +708,7 @@ class GaussianDiffusion:
             denoised_fn=denoised_fn,
             cond_fn=cond_fn,
             model_kwargs=model_kwargs,
+            seed=seed,
             device=device,
             pre_seq=pre_seq,
             transl_req=transl_req,
@@ -724,6 +726,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
+        seed=None,
         device=None,
         pre_seq=None,
         transl_req=None,
@@ -739,6 +742,8 @@ class GaussianDiffusion:
         """
         if device is None:
             device = next(model.parameters()).device
+        if seed is not None:
+            th.manual_seed(seed)
         assert isinstance(shape, (tuple, list))
         if noise is not None:
             img = noise
@@ -750,7 +755,7 @@ class GaussianDiffusion:
             from tqdm.auto import tqdm
 
             indices = tqdm(indices)
-
+        pbar = comfy.utils.ProgressBar(len(indices))
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
@@ -767,6 +772,7 @@ class GaussianDiffusion:
                 )
                 yield out
                 img = out["sample"]
+                pbar.update(1)
 
     def ddim_sample(
         self,
@@ -777,6 +783,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
+        seed=None,
         eta=0.0,
         pre_seq=None,
     ):
@@ -785,6 +792,8 @@ class GaussianDiffusion:
 
         Same usage as p_sample().
         """
+        if seed is not None:
+            th.manual_seed(seed)
         if pre_seq is not None:
             T = pre_seq.shape[1]
             noise = th.randn_like(pre_seq)
@@ -873,6 +882,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
+        seed=None,
         device=None,
         progress=False,
         eta=0.0,
@@ -892,6 +902,7 @@ class GaussianDiffusion:
             denoised_fn=denoised_fn,
             cond_fn=cond_fn,
             model_kwargs=model_kwargs,
+            seed=seed,
             device=device,
             progress=progress,
             eta=eta,
@@ -909,6 +920,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
+        seed=None,
         device=None,
         progress=False,
         eta=0.0,
@@ -920,6 +932,8 @@ class GaussianDiffusion:
 
         Same usage as p_sample_loop_progressive().
         """
+        if seed is not None:
+            th.manual_seed(seed)
         if device is None:
             device = next(model.parameters()).device
         assert isinstance(shape, (tuple, list))
@@ -934,7 +948,7 @@ class GaussianDiffusion:
             from tqdm.auto import tqdm
 
             indices = tqdm(indices)
-
+        pbar = comfy.utils.ProgressBar(len(indices))
         for i in indices:
             t = th.tensor([i] * shape[0], device=device)
             with th.no_grad():
@@ -951,6 +965,7 @@ class GaussianDiffusion:
                 )
                 yield out
                 img = out["sample"]
+                pbar.update(1)
 
     def _vb_terms_bpd(
         self, model, x_start, x_t, t, clip_denoised=True, model_kwargs=None
