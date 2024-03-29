@@ -216,23 +216,23 @@ class ExportSMPLTo3DSoftware:
 
     CATEGORY = "MotionDiff/smpl"
 
-    def create_trimeshs(self, smpl_model_path, thetas):
+    def create_trimeshs(self, smpl_model_path, thetas, normalized_to_vertices=False):
         rot2xyz = Rotation2xyz(device=get_torch_device(), smpl_model_path=smpl_model_path)
         faces = rot2xyz.smpl_model.faces
         vertices = rot2xyz(thetas.clone().detach().to(get_torch_device()), mask=None,
-                                        pose_rep='rot6d', translation=True, glob=True,
+                                        pose_rep='xyz' if normalized_to_vertices else 'rot6d', translation=True, glob=True,
                                         jointstype='vertices',
                                         vertstrans=True)
         frames = vertices.shape[3] # shape: 1, nb_frames, 3, nb_joints
         return [Trimesh(vertices=vertices[0, :, :, i].squeeze().tolist(), faces=faces) for i in range(frames)]
     
     def save_smpl(self, smpl, foldername_prefix, format):
-        smpl_model_path, thetas, _ = smpl
+        smpl_model_path, thetas, meta = smpl
         foldername_prefix += self.prefix_append
         full_output_folder, foldername, counter, subfolder, foldername_prefix = folder_paths.get_save_image_path(foldername_prefix, self.output_dir, 196, 24)
         folder = os.path.join(full_output_folder, f"{foldername}_{counter:05}_")
         os.makedirs(folder, exist_ok=True)
-        trimeshs = self.create_trimeshs(smpl_model_path, thetas)
+        trimeshs = self.create_trimeshs(smpl_model_path, thetas, normalized_to_vertices=meta.get("normalized_to_vertices", False))
         for i, trimesh in enumerate(trimeshs):
             trimesh.export(os.path.join(folder, f'{i}.{format}'))
         return {}
