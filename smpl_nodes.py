@@ -26,7 +26,7 @@ class SmplifyMotionData:
         return {
             "required": {
                 "motion_data": ("MOTION_DATA", ),
-                "num_smplify_iters": ("INT", {"min": 1, "max": 1000, "default": 50}),
+                "num_smplify_iters": ("INT", {"min": 1, "max": 1000, "default": 20}),
                 "smplify_step_size": ("FLOAT", {"min": 1e-4, "max": 5e-1, "step": 1e-4, "default": 1e-1}),
                 "smpl_model": (list(smpl_model_dicts.keys()), {"default": "SMPL_NEUTRAL.pkl"})
             }
@@ -41,7 +41,10 @@ class SmplifyMotionData:
         if smpl_model_dicts is None:
             smpl_model_dicts = get_smpl_models_dict()
         smpl_model_path = smpl_model_dicts[smpl_model]
-        joints = motion_data_to_joints(motion_data["motion"])
+        if "joints" in motion_data:
+            joints = motion_data["joints"]
+        else:
+            joints = motion_data_to_joints(motion_data["motion"])
         with torch.inference_mode(False):
             convention = joints2smpl(
                 num_frames=joints.shape[0], 
@@ -85,16 +88,16 @@ class RenderSMPLMesh:
                 "smpl": ("SMPL", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "yfov": ("FLOAT", {"default": 0.75, "min": 0.1, "max": 10, "step": 0.01}),
-                "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
-                "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
-                "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.1}),
+                "yfov": ("FLOAT", {"default": 0.6, "min": 0.1, "max": 10, "step": 0.01}),
+                "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
+                "move_y": ("FLOAT", {"default": -0.1,"min": -500, "max": 500, "step": 0.01}),
+                "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
                 "rotate_x": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
                 "rotate_y": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
                 "rotate_z": ("FLOAT", {"default": 0,"min": -180, "max": 180, "step": 0.1}),
-                "background_hex_color": ("STRING", {"default": "#FFFFFF", "mutiline": False}),
-                "frame_width": ("INT", {"default": 960, "min": 0, "max": 4096, "step": 1}),
-                "frame_height": ("INT", {"default": 960, "min": 0, "max": 4096, "step": 1}),
+                "background_hex_color": ("STRING", {"default": "#000000", "mutiline": False}),
+                "frame_width": ("INT", {"default": 512, "min": 64, "max": 4096, "step": 8}),
+                "frame_height": ("INT", {"default": 512, "min": 64, "max": 4096, "step": 8}),
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),

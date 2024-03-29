@@ -22,6 +22,8 @@ from .utils import *
 from pathlib import Path
 from .smpl_nodes import NODE_CLASS_MAPPINGS as SMPL_NODE_CLASS_MAPPINGS
 from .smpl_nodes import NODE_DISPLAY_NAME_MAPPINGS as SMPL_NODE_DISPLAY_NAME_MAPPINGS
+from .mgpt_nodes import NODE_CLASS_MAPPINGS as MGPT_NODE_CLASS_MAPPINGS
+from .mgpt_nodes import NODE_DISPLAY_NAME_MAPPINGS as MGPT_NODE_DISPLAY_NAME_MAPPINGS
 
 def create_mdm_model(model_config):
     cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
@@ -254,9 +256,12 @@ class MotionDataVisualizer:
     FUNCTION = "visualize"
 
     def visualize(self, motion_data, visualization, distance, elevation, rotation, poselinewidth, opt_title=None):
-        joint = motion_data_to_joints(motion_data["motion"])
+        if "joints" in motion_data:
+            joints = motion_data["joints"]
+        else:
+            joints = motion_data_to_joints(motion_data["motion"])
         pil_frames = plot_3d_motion(
-            None, t2m_kinematic_chain, joint, distance, elevation, rotation, poselinewidth,
+            None, t2m_kinematic_chain, joints, distance, elevation, rotation, poselinewidth,
             title=opt_title if opt_title is not None else '',
             fps=1,  save_as_pil_lists=True, visualization=visualization
         )
@@ -273,7 +278,8 @@ NODE_CLASS_MAPPINGS = {
     "MotionDiffSimpleSampler": MotionDiffSimpleSampler,
     "EmptyMotionData": EmptyMotionData,
     "MotionDataVisualizer": MotionDataVisualizer,
-    **SMPL_NODE_CLASS_MAPPINGS
+    **SMPL_NODE_CLASS_MAPPINGS,
+    **MGPT_NODE_CLASS_MAPPINGS
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -282,5 +288,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MotionDiffSimpleSampler": "MotionDiff Simple Sampler",
     "EmptyMotionData": "Empty Motion Data",
     "MotionDataVisualizer": "Motion Data Visualizer",
-    **SMPL_NODE_DISPLAY_NAME_MAPPINGS
+    **SMPL_NODE_DISPLAY_NAME_MAPPINGS,
+    **MGPT_NODE_DISPLAY_NAME_MAPPINGS
 }
