@@ -22,7 +22,6 @@ class HumanML3DDataModule(BASEDataModule):
         
         # Path to the dataset
         data_root = cfg.DATASET.HUMANML3D.ROOT
-        print(data_root)
         assets_root = cfg.DATASET.HUMANML3D.ASSETS_ROOT
         self.hparams.data_root = data_root
         self.hparams.text_dir = pjoin(data_root, "texts")

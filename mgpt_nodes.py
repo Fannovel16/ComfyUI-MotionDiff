@@ -48,9 +48,9 @@ class mgpt_t2m:
     def INPUT_TYPES(s):
         return {"required": {
             "mgpt_model": ("MGPTMODEL",),
-            "motion_length": ("INT", {"default": 16, "min": 1, "max": 100, "step": 1}),
+            "motion_length": ("INT", {"default": 196, "min": 1, "max": 196, "step": 1}),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
-            "text": ("STRING", {"default": 'jump'}),
+            "text": ("STRING", {"multiline": True,"default": 'make the person jump and turn around'}),
             }
         }
 

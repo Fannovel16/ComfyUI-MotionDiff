@@ -20,3 +20,5 @@ spacy
 bert-score
 omegaconf
 huggingface_hub
+pytorch_lightning
+rich
