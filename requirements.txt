@@ -14,3 +14,9 @@ pyrender
 trimesh
 shapely
 mapbox_earcut
+
+#mgpt
+spacy
+bert-score
+omegaconf
+huggingface_hub

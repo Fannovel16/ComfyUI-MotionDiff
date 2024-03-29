@@ -41,7 +41,10 @@ class SmplifyMotionData:
         if smpl_model_dicts is None:
             smpl_model_dicts = get_smpl_models_dict()
         smpl_model_path = smpl_model_dicts[smpl_model]
-        joints = motion_data_to_joints(motion_data["motion"])
+        if "joints" in motion_data:
+            joints = motion_data["joints"]
+        else:
+            joints = motion_data_to_joints(motion_data["motion"])
         with torch.inference_mode(False):
             convention = joints2smpl(
                 num_frames=joints.shape[0], 
