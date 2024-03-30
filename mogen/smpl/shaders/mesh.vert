@@ -6,9 +6,9 @@ layout(location = NORMAL_LOC) in vec3 normal;
 layout(location = INST_M_LOC) in mat4 inst_m;
 
 // Uniforms
-uniform mat4 M;
-uniform mat4 V;
-uniform mat4 P;
+uniform mat4 M; // Model matrix
+uniform mat4 V; // View matrix
+uniform mat4 P; // Projection matrix
 
 // Outputs
 out vec3 frag_position;
@@ -16,9 +16,10 @@ out vec3 frag_normal;
 
 void main()
 {
-    gl_Position = P * V * M * inst_m * vec4(position, 1);
-    frag_position = vec3(M * inst_m * vec4(position, 1.0));
+    mat4 modelView = V * M * inst_m; // Compute model-view matrix
+    gl_Position = P * modelView * vec4(position, 1);
+    frag_position = vec3(modelView * vec4(position, 1.0)); // Position in camera space
 
-    mat4 N = transpose(inverse(M * inst_m));
-    frag_normal = normalize(vec3(N * vec4(normal, 0.0)));
+    mat3 normalMatrix = transpose(inverse(mat3(modelView))); // Normal matrix in camera space
+    frag_normal = normalize(normalMatrix * normal); // Transform normal to camera space
 }
