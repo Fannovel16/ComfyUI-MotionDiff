@@ -49,7 +49,7 @@ class Humans4DLoader:
             detector_cls = NAS
         elif "rtdetr" in det_filename:
             detector_cls = RTDETR
-        detector = detector_cls(Path(CACHE_DIR_4DHUMANS) / det_filename)
+        detector = detector_cls(str(Path(CACHE_DIR_4DHUMANS) / det_filename))
         return (SimpleNamespace(human4d=model, model_cfg=model_cfg, detector=detector, fp16=fp16), )
 
 class Human4D_Img2SMPL:
@@ -88,6 +88,7 @@ class Human4D_Img2SMPL:
         boxes_images = self.get_boxes(models.detector, image, conf=det_confidence_thresh, iou=det_iou_thresh, batch_size=det_batch_size)
         verts_frames = []
         cam_t_frames = []
+        kps_2d_frames = []
         for img_pt, boxes in zip(image, boxes_images):
             img_cv2 = img_pt.numpy()[:, :, ::-1].copy()
 
@@ -96,6 +97,7 @@ class Human4D_Img2SMPL:
             dataloader = torch.utils.data.DataLoader(dataset, batch_size=hmr_batch_size, shuffle=False, num_workers=0)
             _all_verts = []
             _all_cam_t = []
+            _all_kps_2d = []
 
             for batch in dataloader:
                 batch = recursive_to(batch, get_torch_device())
@@ -116,8 +118,10 @@ class Human4D_Img2SMPL:
                 for n in range(batch_size):
                     verts = out['pred_vertices'][n].detach().cpu() #Shape [num_verts, 3]
                     cam_t = pred_cam_t_full[n]
+                    kps_2d = out['pred_keypoints_2d'][n]
                     _all_verts.append(verts)
                     _all_cam_t.append(cam_t)
+                    _all_kps_2d.append(kps_2d)
                 
             verts_frames.append(
                 torch.stack(_all_verts) #Shape [num_subjects, num_verts, 3]
@@ -125,12 +129,16 @@ class Human4D_Img2SMPL:
             cam_t_frames.append(
                 torch.stack(_all_cam_t) #Shape [num_subjects, 3]
             )
+            kps_2d_frames.append(
+                torch.stack(_all_kps_2d) #Shape [num_subjects, 44, 2]
+            )
 
         verts_frames #List of [num_subjects, num_verts, 3]
         cam_t_frames #List of [num_frames, num_subjects, 3]
+        kps_2d_frames #List of [num_subjects, 44, 2]
         return ((
             smpl_models_dict["SMPL_NEUTRAL.pkl"], verts_frames, 
-            {"normalized_to_vertices": True, 'cam': cam_t_frames, "frame_width": img_size[0, 0], "frame_height": img_size[0, 1], "focal_length": scaled_focal_length}
+            {"normalized_to_vertices": True, 'cam': cam_t_frames, "frame_width": img_size[0, 0], "frame_height": img_size[0, 1], "focal_length": scaled_focal_length, "keypoints_2d": kps_2d_frames}
             # In Comfy, IMAGE is a batched Tensor so all frames always share the same size
         ), )
 
