@@ -160,7 +160,7 @@ def render(motions):
     out = np.stack(vid, axis=0)
     return out
 
-def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, frame_width, frame_height, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None, shape_parameters=None):
+def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, frame_width, frame_height, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None, shape_parameters=None, normalized_to_vertices=False):
     if shape_parameters is not None:
         betas_tensor = torch.tensor([shape_parameters], dtype=torch.float32)
         batch_size = thetas.shape[3]  
@@ -173,7 +173,7 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
     faces = rot2xyz.smpl_model.faces
 
     vertices = rot2xyz(thetas.clone().to(get_torch_device()).detach(), mask=None,
-                                    pose_rep='rot6d', translation=True, glob=True,
+                                    pose_rep='xyz' if normalized_to_vertices else 'rot6d', translation=True, glob=True,
                                     jointstype='vertices',
                                     vertstrans=True)
 
