@@ -1,0 +1,175 @@
+NAME: Webui # Experiment name
+DEBUG: False # Debug mode
+ACCELERATOR: 'cpu' # Devices optioncal: “cpu”, “gpu”, “tpu”, “ipu”, “hpu”, “mps, “auto”
+DEVICE: [0] # Index of gpus eg. [0] or [0,1,2,3]
+
+# Training configuration
+TRAIN:
+  #---------------------------------
+  STAGE: lm_instruct
+  DATASETS: ['humanml3d'] # Training datasets
+  SPLIT: 'train' # Training split name
+  NUM_WORKERS: 32 # Number of workers
+  BATCH_SIZE: 16 # Size of batches
+  START_EPOCH: 0 # Start epochMMOTIONENCODER
+  END_EPOCH: 99999 # End epoch
+  ABLATION:
+    pkeep: 0.5
+  OPTIM:
+    TYPE: AdamW # Optimizer type
+    LR: 2e-4 # Learning rate
+    WEIGHT_DECAY: 0.0
+    LR_SCHEDULER: [100, 200, 300, 400]
+    GAMMA: 0.8
+
+  LR_SCHEDULER:
+    target: CosineAnnealingLR
+    params:
+      T_max: ${eval:${LOGGER.VAL_EVERY_STEPS} * 100}
+      eta_min: 1e-6
+
+# Evaluating Configuration
+EVAL:
+  DATASETS: ['humanml3d'] # Evaluating datasets
+  BATCH_SIZE: 32 # Evaluating Batch size
+  NUM_WORKERS: 8 # Validation Batch size
+  SPLIT: test
+
+# Test Configuration
+TEST:
+  CHECKPOINTS: checkpoints/MotionGPT-base/motiongpt_s3_h3d.ckpt
+  DATASETS: ['humanml3d'] # training datasets
+  SPLIT: test
+  BATCH_SIZE: 32 # training Batch size
+  MEAN: False
+  NUM_SAMPLES: 1
+  FACT: 1
+
+# Datasets Configuration
+DATASET:
+  target: .mGPT.data.HumanML3D.HumanML3DDataModule
+  JOINT_TYPE: 'humanml3d' # join type
+  CODE_PATH: 'VQBEST'
+  TASK_ROOT: .deps/mGPT_instructions
+  TASK_PATH: ''
+  SMPL_PATH: .deps/smpl
+  TRANSFORM_PATH: .deps/transforms/
+  WORD_VERTILIZER_PATH: .deps/glove/
+  NFEATS: 263
+  KIT:
+    ROOT: .datasets/kit-ml # KIT directory
+    SPLIT_ROOT: .datasets/kit-ml # KIT splits directory
+    MEAN_STD_PATH: .deps/t2m/
+    MAX_MOTION_LEN: 196
+    MIN_MOTION_LEN: 24
+    MAX_TEXT_LEN: 20
+    PICK_ONE_TEXT: true
+    FRAME_RATE: 12.5
+    UNIT_LEN: 4
+  HUMANML3D:
+    ROOT: .datasets/humanml3d # HumanML3D directory
+    SPLIT_ROOT: .datasets/humanml3d # HumanML3D splits directory
+    ASSETS_ROOT: .assets/meta/
+    MEAN_STD_PATH: .deps/t2m/
+    MAX_MOTION_LEN: 196
+    MIN_MOTION_LEN: 40
+    MAX_TEXT_LEN: 20
+    PICK_ONE_TEXT: true
+    FRAME_RATE: 20.0
+    UNIT_LEN: 4
+    STD_TEXT: False
+
+ABLATION:
+  # For MotionGPT
+  use_length: False
+  predict_ratio: 0.2
+  inbetween_ratio: 0.25
+  image_size: 256
+  # For Motion-latent-diffusion
+  VAE_TYPE: 'actor' # vae ablation: actor or mcross
+  VAE_ARCH: 'encoder_decoder' # mdiffusion vae architecture
+  PE_TYPE: 'actor' # mdiffusion mld or actor
+  DIFF_PE_TYPE: 'actor' # mdiffusion mld or actor
+  SKIP_CONNECT: False # skip connection for denoiser va
+  MLP_DIST: False # use linear to expand mean and std rather expand token nums
+  IS_DIST: False # Mcross distribution kl
+  PREDICT_EPSILON: True # noise or motion
+
+METRIC:
+  TYPE: ['TM2TMetrics']
+  TM2T:
+   t2m_path: .deps/t2m/ # path for tm2t evaluator
+  TASK: 't2m'
+  FORCE_IN_METER: True
+  DIST_SYNC_ON_STEP: True
+  MM_NUM_SAMPLES: 100 # Number of samples for multimodal test
+  MM_NUM_REPEATS: 30 # Number of repeats for multimodal test
+  MM_NUM_TIMES: 10 # Number of times to repeat the multimodal test
+  DIVERSITY_TIMES: 300 # Number of times to repeat the diversity test
+
+# Losses Configuration
+LOSS:
+  TYPE: t2mgpt # Losses type
+  LAMBDA_FEATURE: 1.0
+  LAMBDA_VELOCITY: 0.5
+  LAMBDA_COMMIT: 0.02
+  LAMBDA_CLS: 1.0
+  LAMBDA_M2T2M: 1.0
+  LAMBDA_T2M2T: 10.0
+  ABLATION:
+    RECONS_LOSS: 'l1_smooth'
+  LAMBDA_REC: 1.0 # Lambda for reconstruction losses
+  LAMBDA_JOINT: 1.0 # Lambda for joint losses
+
+  LAMBDA_LATENT: 1e-5 # Lambda for latent losses
+  LAMBDA_KL: 1e-5 # Lambda for kl losses
+  LAMBDA_GEN: 1.0 # Lambda for text-motion generation losses
+  LAMBDA_CROSS: 1.0 # Lambda for cross-reconstruction losses
+  LAMBDA_CYCLE: 1.0 # Lambda for cycle losses
+  LAMBDA_PRIOR: 0.0 # Lambda for diffusion prior losses
+
+# Model Configuration
+model:
+  target: .mGPT.models.mgpt.MotionGPT
+  params:
+    condition: 'text'
+    task: 't2m'
+    lm:
+      target: .mGPT.archs.mgpt_lm.MLM
+      params:
+        model_type: t5
+        model_path: google/flan-t5-base
+        stage: ${TRAIN.STAGE}
+        motion_codebook_size: 512
+        ablation: ${ABLATION}
+    motion_vae:
+      target: .mGPT.archs.mgpt_vq.VQVae
+      params:
+        quantizer: 'ema_reset'
+        code_num: 512
+        code_dim: 512
+        output_emb_width: 512
+        down_t: 2
+        stride_t: 2
+        width: 512
+        depth: 3
+        dilation_growth_rate: 3
+        norm: None
+        activation: 'relu'
+        nfeats: ${DATASET.NFEATS}
+        ablation: ${ABLATION}
+
+    # Related parameters
+    stage: ${TRAIN.STAGE}
+    debug: ${DEBUG}
+    codebook_size: 512
+    metrics_dict: ${METRIC.TYPE}
+
+# Logger configuration
+LOGGER:
+  LOG_EVERY_STEPS: 5
+  VAL_EVERY_STEPS: 10
+  TENSORBOARD: True
+  wandb:
+    params:
+      project: null

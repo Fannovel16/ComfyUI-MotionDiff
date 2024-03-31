@@ -22,3 +22,11 @@ omegaconf
 huggingface_hub
 pytorch_lightning
 rich
+
+#4dhuman
+yacs
+scikit-image
+timm
+webdataset
+dill
+pandas

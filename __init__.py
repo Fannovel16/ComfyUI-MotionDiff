@@ -8,9 +8,9 @@ sys.path.insert(0, str(EXTENSION_PATH.resolve()))
 import custom_mmpkg.custom_mmcv as mmcv
 import numpy as np
 import torch
-from mogen.models import build_architecture
+from motiondiff_modules.mogen.models import build_architecture
 from custom_mmpkg.custom_mmcv.runner import load_checkpoint
-from mogen.utils.plot_utils import (
+from motiondiff_modules.mogen.utils.plot_utils import (
     plot_3d_motion,
     t2m_kinematic_chain
 )
@@ -20,10 +20,12 @@ from .utils import *
 #from custom_mmpkg.custom_mmhuman3d.core.conventions.keypoints_mapping import convert_kps
 #from custom_mmpkg.custom_mmhuman3d.core.visualization.visualize_keypoints3d import visualize_kp3d
 from pathlib import Path
-from .smpl_nodes import NODE_CLASS_MAPPINGS as SMPL_NODE_CLASS_MAPPINGS
-from .smpl_nodes import NODE_DISPLAY_NAME_MAPPINGS as SMPL_NODE_DISPLAY_NAME_MAPPINGS
-from .mgpt_nodes import NODE_CLASS_MAPPINGS as MGPT_NODE_CLASS_MAPPINGS
-from .mgpt_nodes import NODE_DISPLAY_NAME_MAPPINGS as MGPT_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.smpl_nodes import NODE_CLASS_MAPPINGS as SMPL_NODE_CLASS_MAPPINGS
+from .nodes.smpl_nodes import NODE_DISPLAY_NAME_MAPPINGS as SMPL_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.mgpt_nodes import NODE_CLASS_MAPPINGS as MGPT_NODE_CLASS_MAPPINGS
+from .nodes.mgpt_nodes import NODE_DISPLAY_NAME_MAPPINGS as MGPT_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.human4d_nodes import NODE_CLASS_MAPPINGS as HUMAN4D_NODE_CLASS_MAPPINGS
+from .nodes.human4d_nodes import NODE_DISPLAY_NAME_MAPPINGS as HUMAN4D_NODE_DISPLAY_NAME_MAPPINGS
 
 def create_mdm_model(model_config):
     cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
@@ -279,7 +281,8 @@ NODE_CLASS_MAPPINGS = {
     "EmptyMotionData": EmptyMotionData,
     "MotionDataVisualizer": MotionDataVisualizer,
     **SMPL_NODE_CLASS_MAPPINGS,
-    **MGPT_NODE_CLASS_MAPPINGS
+    **MGPT_NODE_CLASS_MAPPINGS,
+    **HUMAN4D_NODE_CLASS_MAPPINGS
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -289,5 +292,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "EmptyMotionData": "Empty Motion Data",
     "MotionDataVisualizer": "Motion Data Visualizer",
     **SMPL_NODE_DISPLAY_NAME_MAPPINGS,
-    **MGPT_NODE_DISPLAY_NAME_MAPPINGS
+    **MGPT_NODE_DISPLAY_NAME_MAPPINGS,
+    **HUMAN4D_NODE_DISPLAY_NAME_MAPPINGS
 }
