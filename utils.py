@@ -10,7 +10,7 @@ from scipy.ndimage import gaussian_filter
 import comfy.model_management as model_management
 from torch.hub import download_url_to_file, get_dir
 from urllib.parse import urlparse
-from mogen.utils.plot_utils import recover_from_ric
+from motiondiff_modules.mogen.utils.plot_utils import recover_from_ric
 
 HF_PREFIX = "https://huggingface.co/spaces/mingyuan/ReMoDiffuse/resolve/main/"
 

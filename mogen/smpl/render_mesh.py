@@ -67,7 +67,6 @@ def render(motions):
                                     vertstrans=True)
 
     frames = vertices.shape[3] # shape: 1, nb_frames, 3, nb_joints
-    print (vertices.shape)
     MINS = torch.min(torch.min(vertices[0], axis=0)[0], axis=1)[0]
     MAXS = torch.max(torch.max(vertices[0], axis=0)[0], axis=1)[0]
     # vertices[:,:,1,:] -= MINS[1] + 1e-5
@@ -178,7 +177,6 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
                                     vertstrans=True)
 
     frames = vertices.shape[3] # shape: 1, nb_frames, 3, nb_joints
-    #print (vertices.shape)
     MINS = torch.min(torch.min(vertices[0], axis=0)[0], axis=1)[0]
     MAXS = torch.max(torch.max(vertices[0], axis=0)[0], axis=1)[0]
     minx = MINS[0] - 0.5
