@@ -29,7 +29,7 @@ class Humans4DLoader:
         return {
             "required": {
                 "det_filename": ("STRING", {"default": "rtdetr-x.pt"}),
-                "fp16": ("BOOLEAN", {"default": True}) 
+                "fp16": ("BOOLEAN", {"default": False}) 
             }
         }
 
