@@ -322,7 +322,25 @@ class SMPLShapeParameters:
         shape_parameters = [size, thickness, upper_body_height, lower_body_height, muscle_mass, legs, chest, waist_height, waist_width, arms]
         smpl[2]["shape_parameters"] = shape_parameters
         return (smpl,)
-    
+
+""" 
+class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "smpl_multi_subjects": ("SMPL_MULTIPLE_SUBJECTS", )
+            },
+        }
+    RETURN_TYPES = ("IMAGE",)
+    CATEGORY = "MotionDiff/smpl"
+
+    def render(self, smpl_multi_subjects):
+        meta = smpl_multi_subjects[2]
+        kps_2d_frames = meta['keypoints_2d']
+        
+"""
+   
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
     "RenderSMPLMesh": RenderSMPLMesh,
