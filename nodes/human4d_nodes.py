@@ -58,14 +58,12 @@ class Humans4DLoader:
 def render_openpose(kps_2d_frames, boxes_frames, frame_width, frame_height):
     openpose_frames = []
     for subjects_kps, xyxy_boxes_batch in zip(kps_2d_frames, boxes_frames):
-        print(xyxy_boxes_batch.shape)
         canvas = np.zeros([frame_height, frame_width, 3], dtype=np.uint8)
         subjects_kps = subjects_kps.numpy() # [num_subjects, 44, 3]
         subjects_kps = np.concatenate((subjects_kps, np.ones_like(subjects_kps)[:, :, [0]]), axis=-1)
         keypoint_matches = [(1, 12), (2, 8), (3, 7), (4, 6), (5, 9), (6, 10), (7, 11), (8, 14), (9, 2), (10, 1), (11, 0), (12, 3), (13, 4), (14, 5)]
         for i in range(subjects_kps.shape[0]):
             subject_xyxy_box = xyxy_boxes_batch[i]
-            print(subject_xyxy_box.shape)
             x0, y0, x1, y1 = subject_xyxy_box.astype(np.int32)
             _width, _height = x1-x0+1, y1-y0+1
             subjects_kps[i, :, 0] = _width * (subjects_kps[i, :, 0] + 0.5)
