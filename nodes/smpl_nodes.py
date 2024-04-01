@@ -183,9 +183,8 @@ class RenderMultipleSubjectsSMPLMesh:
         white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
         white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
         #Normalize to [0, 1]
-        normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #For some reason this is already inversed depth???
-        normalized_depth[normalized_depth != 0] = normalized_depth[normalized_depth != 0]
+        normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
         depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
