@@ -20,6 +20,8 @@ from comfy.model_management import get_torch_device
 from types import SimpleNamespace
 from torch.utils.data import DataLoader
 from ..md_config import get_smpl_models_dict
+from motiondiff_modules.hmr2.utils.render_openpose import render_openpose as _render_openpose
+from functools import partial
 
 smpl_models_dict = get_smpl_models_dict()
 
@@ -28,7 +30,7 @@ class Humans4DLoader:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "det_filename": ("STRING", {"default": "rtdetr-x.pt"}),
+                "det_filename": ("STRING", {"default": "yolov8x.pt"}), 
                 "fp16": ("BOOLEAN", {"default": False}) 
             }
         }
@@ -51,6 +53,33 @@ class Humans4DLoader:
             detector_cls = RTDETR
         detector = detector_cls(str(Path(CACHE_DIR_4DHUMANS) / det_filename))
         return (SimpleNamespace(human4d=model, model_cfg=model_cfg, detector=detector, fp16=fp16), )
+
+# kps_2d_frames: #List of [num_subjects, 44, 3]
+def render_openpose(kps_2d_frames, boxes_frames, frame_width, frame_height):
+    openpose_frames = []
+    for subjects_kps, xyxy_boxes_batch in zip(kps_2d_frames, boxes_frames):
+        print(xyxy_boxes_batch.shape)
+        canvas = np.zeros([frame_height, frame_width, 3], dtype=np.uint8)
+        subjects_kps = subjects_kps.numpy() # [num_subjects, 44, 3]
+        subjects_kps = np.concatenate((subjects_kps, np.ones_like(subjects_kps)[:, :, [0]]), axis=-1)
+        keypoint_matches = [(1, 12), (2, 8), (3, 7), (4, 6), (5, 9), (6, 10), (7, 11), (8, 14), (9, 2), (10, 1), (11, 0), (12, 3), (13, 4), (14, 5)]
+        for i in range(subjects_kps.shape[0]):
+            subject_xyxy_box = xyxy_boxes_batch[i]
+            print(subject_xyxy_box.shape)
+            x0, y0, x1, y1 = subject_xyxy_box.astype(np.int32)
+            _width, _height = x1-x0+1, y1-y0+1
+            subjects_kps[i, :, 0] = _width * (subjects_kps[i, :, 0] + 0.5)
+            subjects_kps[i, :, 1] = _height * (subjects_kps[i, :, 1] + 0.5)
+
+            pred_keypoints_img = np.zeros([_height, _width, 3], dtype=np.uint8)
+            body_keypoints = subjects_kps[i, :25]
+            extra_keypoints = subjects_kps[i, -19:]
+            for pair in keypoint_matches:
+                body_keypoints[pair[0], :] = extra_keypoints[pair[1], :]
+            pred_keypoints_img = _render_openpose(pred_keypoints_img, body_keypoints)
+            canvas[y0:y1+1, x0:x1+1, :] = pred_keypoints_img
+        openpose_frames.append(canvas)
+    return torch.from_numpy(np.stack(openpose_frames))
 
 class Human4D_Img2SMPL:
     @classmethod
@@ -113,16 +142,15 @@ class Human4D_Img2SMPL:
                 scaled_focal_length = models.model_cfg.EXTRA.FOCAL_LENGTH / models.model_cfg.MODEL.IMAGE_SIZE * img_size.max()
                 pred_cam_t_full = cam_crop_to_full(pred_cam, box_center, box_size, img_size, scaled_focal_length).detach().cpu()
 
-                # Render the result
                 batch_size = batch['img'].shape[0]
                 for n in range(batch_size):
                     verts = out['pred_vertices'][n].detach().cpu() #Shape [num_verts, 3]
                     cam_t = pred_cam_t_full[n]
-                    kps_2d = out['pred_keypoints_2d'][n]
+                    kps_2d = out['pred_keypoints_2d'][n].detach().cpu() #Shape [44, 3]
                     _all_verts.append(verts)
                     _all_cam_t.append(cam_t)
                     _all_kps_2d.append(kps_2d)
-                
+            
             verts_frames.append(
                 torch.stack(_all_verts) #Shape [num_subjects, num_verts, 3]
             )
@@ -130,15 +158,17 @@ class Human4D_Img2SMPL:
                 torch.stack(_all_cam_t) #Shape [num_subjects, 3]
             )
             kps_2d_frames.append(
-                torch.stack(_all_kps_2d) #Shape [num_subjects, 44, 2]
+                torch.stack(_all_kps_2d) #Shape [num_subjects, 44, 3]
             )
-
         verts_frames #List of [num_subjects, num_verts, 3]
         cam_t_frames #List of [num_frames, num_subjects, 3]
-        kps_2d_frames #List of [num_subjects, 44, 2]
+        kps_2d_frames #List of [num_subjects, 44, 3]
         return ((
             smpl_models_dict["SMPL_NEUTRAL.pkl"], verts_frames, 
-            {"normalized_to_vertices": True, 'cam': cam_t_frames, "frame_width": img_size[0, 0], "frame_height": img_size[0, 1], "focal_length": scaled_focal_length, "keypoints_2d": kps_2d_frames}
+            {"normalized_to_vertices": True, 'cam': cam_t_frames, 
+            "frame_width": int(img_size[0, 0].item()), "frame_height": int(img_size[0, 1].item()), 
+            "focal_length": scaled_focal_length, 
+            "render_openpose": partial(render_openpose, kps_2d_frames, boxes_images, int(img_size[0, 0].item()), int(img_size[0, 1].item()))}
             # In Comfy, IMAGE is a batched Tensor so all frames always share the same size
         ), )
 

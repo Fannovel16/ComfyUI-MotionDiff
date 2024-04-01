@@ -323,7 +323,6 @@ class SMPLShapeParameters:
         smpl[2]["shape_parameters"] = shape_parameters
         return (smpl,)
 
-""" 
 class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
     @classmethod
     def INPUT_TYPES(s):
@@ -334,12 +333,13 @@ class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
         }
     RETURN_TYPES = ("IMAGE",)
     CATEGORY = "MotionDiff/smpl"
-
+    FUNCTION = "render"
     def render(self, smpl_multi_subjects):
-        meta = smpl_multi_subjects[2]
-        kps_2d_frames = meta['keypoints_2d']
-        
-"""
+        render_openpose = smpl_multi_subjects[2].get("render_openpose", None)
+        if render_openpose is None:
+            raise NotImplementedError("render_openpose")
+        return (render_openpose().float() / 255., )
+
    
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
@@ -348,7 +348,8 @@ NODE_CLASS_MAPPINGS = {
     "SaveSMPL": SaveSMPL,
     "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware,
     "SMPLShapeParameters": SMPLShapeParameters,
-    "RenderMultipleSubjectsSMPLMesh": RenderMultipleSubjectsSMPLMesh
+    "RenderMultipleSubjectsSMPLMesh": RenderMultipleSubjectsSMPLMesh,
+    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -358,5 +359,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SaveSMPL": "Save SMPL",
     "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software",
     "SMPLShapeParameters": "SMPL Shape Parameters",
-    "RenderMultipleSubjectsSMPLMesh": "Render Mutiple Subjects from SMPL Mesh"
+    "RenderMultipleSubjectsSMPLMesh": "Render Mutiple Subjects from SMPL Mesh",
+    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": "Render Multiple OpenPose from SMPL Mesh"
 }
