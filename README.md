@@ -1,5 +1,5 @@
 # ComfyUI MotionDiff
-Implementation of MDM, MotionDiffuse and ReMoDiffuse into ComfyUI
+Implementation of 4DHuman, MotionGPT, MDM, MotionDiffuse and ReMoDiffuse into ComfyUI
 
 # Installation:
 ## Installing prerequisites on Ubuntu (and maybe other Linux distros)
@@ -25,6 +25,10 @@ If you can't run **install.bat** (e.g. you are a Linux user). Open the CMD/Shell
   - Start ComfyUI
 
 # Examples
+## 3D Pose Estimation from 4DHuman
+
+https://github.com/Fannovel16/ComfyUI-MotionDiff/blob/main/examples/4dhuman.json
+
 ## Generate and render
 https://github.com/Fannovel16/ComfyUI-MotionDiff/blob/main/examples/full_motiondiff_example.json
 
