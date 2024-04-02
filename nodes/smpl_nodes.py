@@ -16,6 +16,8 @@ from PIL import ImageColor
 import folder_paths
 from trimesh import Trimesh
 from trimesh.exchange.load import mesh_formats
+from tqdm import tqdm
+import comfy.utils
 
 smpl_model_dicts = None
 class SmplifyMotionData:
@@ -338,6 +340,67 @@ class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
             raise NotImplementedError("render_openpose")
         return (render_openpose().float() / 255., )
 
+class Export_SMPLMultipleSubjects_To_3DSoftware:
+    def __init__(self):
+        self.output_dir = folder_paths.get_output_directory()
+        self.type = "output"
+        self.prefix_append = "_smpl"
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "smpl_multi_subjects": ("SMPL_MULTIPLE_SUBJECTS", ),
+                "foldername_prefix": ("STRING", {"default": "4dhuman_meshes"}),
+                "format": (list(mesh_formats()), {"default": 'glb'})
+            }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "save_smpl"
+
+    OUTPUT_NODE = True
+
+    CATEGORY = "MotionDiff/smpl"
+
+    def vertices_to_trimesh(self, vertices, camera_translation, faces, rot_axis=[1,0,0], rot_angle=0,):
+        import trimesh
+        mesh = trimesh.Trimesh(vertices + camera_translation, faces.copy())
+        
+        rot = trimesh.transformations.rotation_matrix(
+                np.radians(rot_angle), rot_axis)
+        mesh.apply_transform(rot)
+
+        rot = trimesh.transformations.rotation_matrix(
+            np.radians(180), [1, 0, 0])
+        mesh.apply_transform(rot)
+        return mesh
+    
+    def save_smpl(self, smpl_multi_subjects, foldername_prefix, format):
+        import json
+        foldername_prefix += self.prefix_append
+        full_output_folder, foldername, counter, subfolder, foldername_prefix = folder_paths.get_save_image_path(foldername_prefix, self.output_dir, 196, 24)
+        folder = os.path.join(full_output_folder, f"{foldername}_{counter:05}_")
+        os.makedirs(folder, exist_ok=True)
+
+        smpl_model_path, verts_frames, meta = smpl_multi_subjects
+        rot2xyz = Rotation2xyz(device="cpu", smpl_model_path=smpl_model_path)
+        faces = rot2xyz.smpl_model.faces
+        cam_t_frames, focal_length, frame_width, frame_height= meta["cam"], meta["focal_length"], meta["frame_width"], meta["frame_height"]
+        
+        pbar = comfy.utils.ProgressBar(len(verts_frames))
+        for i in tqdm(range(len(verts_frames))):
+            frame_dir = os.path.join(folder, f'frame_{i:05}')
+            os.makedirs(frame_dir, exist_ok=True)
+            subjects = verts_frames[i]
+            cam_t_subjects = cam_t_frames[i]
+            for j, (subject_vertices, cam_t) in enumerate(zip(subjects, cam_t_subjects)):
+                mesh = self.vertices_to_trimesh(subject_vertices, cam_t, faces)
+                mesh.export(os.path.join(frame_dir, f'subject_{j}.{format}'))
+            with open(os.path.join(frame_dir, "camera_intrinsics.json"), 'w') as f:
+                json.dump(dict(fx=focal_length.item(), fy=focal_length.item(), cx=frame_width / 2, cy=frame_height / 2, zfar="1e12"), f)
+            pbar.update(1)
+        return {}
    
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
@@ -347,7 +410,8 @@ NODE_CLASS_MAPPINGS = {
     "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware,
     "SMPLShapeParameters": SMPLShapeParameters,
     "RenderMultipleSubjectsSMPLMesh": RenderMultipleSubjectsSMPLMesh,
-    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects
+    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects,
+    "Export_SMPLMultipleSubjects_To_3DSoftware": Export_SMPLMultipleSubjects_To_3DSoftware
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -357,6 +421,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SaveSMPL": "Save SMPL",
     "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software",
     "SMPLShapeParameters": "SMPL Shape Parameters",
-    "RenderMultipleSubjectsSMPLMesh": "Render Mutiple Subjects from SMPL Mesh",
-    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": "Render Multiple OpenPose from SMPL Mesh"
+    "RenderMultipleSubjectsSMPLMesh": "Render Mutiple SMPL Mesh",
+    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": "Render OpenPose from SMPL Multiple",
+    "Export_SMPLMultipleSubjects_To_3DSoftware": "Export Multiple SMPL Subjects toto 3DCGI Software "
 }

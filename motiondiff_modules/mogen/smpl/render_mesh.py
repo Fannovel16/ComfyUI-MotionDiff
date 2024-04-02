@@ -18,7 +18,6 @@ import trimesh
 from pyrender.constants import RenderFlags
 from comfy.model_management import get_torch_device
 from tqdm import tqdm
-from PIL import Image
 
 shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
