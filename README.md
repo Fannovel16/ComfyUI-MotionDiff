@@ -27,6 +27,11 @@ If you can't run **install.bat** (e.g. you are a Linux user). Open the CMD/Shell
 # Examples
 ## 3D Pose Estimation from 4DHuman
 
+
+https://github.com/Fannovel16/ComfyUI-MotionDiff/assets/16047777/cc885946-331b-4a9d-a138-717b40572404
+
+
+
 https://github.com/Fannovel16/ComfyUI-MotionDiff/blob/main/examples/4dhuman.json
 
 ## Generate and render
