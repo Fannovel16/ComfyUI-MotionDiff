@@ -32,7 +32,7 @@ class Humans4DLoader:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "detector": (["person_yolov8m-seg.pt", "person_yolov8s-seg.pt", "yolov8x.pt", "yolov9c.pt", "yolov9e.pt"], {"default": "yolov8x.pt"}), 
+                "detector": (["person_yolov8m-seg.pt", "person_yolov8s-seg.pt", "yolov8x.pt", "yolov9c.pt", "yolov9e.pt"], {"default": "person_yolov8m-seg.pt"}), 
                 "fp16": ("BOOLEAN", {"default": False}) 
             }
         }

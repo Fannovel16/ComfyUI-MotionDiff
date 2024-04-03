@@ -284,7 +284,7 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
 
         if depth_only:
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
-            color = np.zeros([frame_height, frame_width, 4])
+            color = np.ones([frame_height, frame_width, 4])
         else:
             color, depth = r.render(scene, flags=RenderFlags.RGBA)
 
@@ -419,7 +419,7 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
         cam_t_subjects = cam_t_frames[i]
         mesh_nodes = []
         if subjects is None:
-            vid.append(np.zeros([frame_height, frame_width, 4], dtype=np.uint8))
+            vid.append(np.ones([frame_height, frame_width, 4], dtype=np.uint8))
             vid_depth.append(np.zeros([frame_height, frame_width], dtype=np.float32))
             continue
         for subject_vertices, cam_t in zip(subjects, cam_t_subjects):
@@ -441,6 +441,4 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
         pbar.update(1)
         
     r = None
-    print([frame.shape for frame in vid])
-    print([frame.shape for frame in vid_depth])
     return np.stack(vid, axis=0), np.stack(vid_depth, axis=0)
