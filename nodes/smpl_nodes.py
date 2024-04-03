@@ -393,6 +393,8 @@ class Export_SMPLMultipleSubjects_To_3DSoftware:
             frame_dir = os.path.join(folder, f'frame_{i:05}')
             os.makedirs(frame_dir, exist_ok=True)
             subjects = verts_frames[i]
+            if subjects is None:
+                continue
             cam_t_subjects = cam_t_frames[i]
             for j, (subject_vertices, cam_t) in enumerate(zip(subjects, cam_t_subjects)):
                 mesh = self.vertices_to_trimesh(subject_vertices, cam_t, faces)

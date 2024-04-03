@@ -418,6 +418,10 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
         subjects = verts_frames[i]
         cam_t_subjects = cam_t_frames[i]
         mesh_nodes = []
+        if subjects is None:
+            vid.append(np.zeros_like([frame_height, frame_width, 3], dtype=np.uint8))
+            vid_depth.append(np.zeros_like([frame_height, frame_width, 3], dtype=np.float32))
+            continue
         for subject_vertices, cam_t in zip(subjects, cam_t_subjects):
             mesh = vertices_to_trimesh(subject_vertices, cam_t, faces)
             mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
