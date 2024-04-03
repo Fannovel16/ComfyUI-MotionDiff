@@ -314,8 +314,8 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
     
     rot2xyz = Rotation2xyz(device="cpu", smpl_model_path=smpl_model_path)
     faces = rot2xyz.smpl_model.faces
-    MINS = torch.stack([verts_frame.min(0).values.min(0).values for verts_frame in verts_frames]).min(0).values
-    MAXS = torch.stack([verts_frame.max(0).values.max(0).values for verts_frame in verts_frames]).max(0).values
+    MINS = torch.stack([verts_frame.min(0).values.min(0).values for verts_frame in verts_frames if verts_frame is not None]).min(0).values
+    MAXS = torch.stack([verts_frame.max(0).values.max(0).values for verts_frame in verts_frames if verts_frame is not None]).max(0).values
     minx = MINS[0] - 0.5
     maxx = MAXS[0] + 0.5
     minz = MINS[2] - 0.5 

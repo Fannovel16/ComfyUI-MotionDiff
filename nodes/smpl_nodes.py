@@ -159,6 +159,7 @@ class RenderMultipleSubjectsSMPLMesh:
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),
+                "remove_background": ("BOOLEAN", {"default": True})
             }
         }
 
@@ -166,7 +167,7 @@ class RenderMultipleSubjectsSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl_multi_subjects, fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False):
+    def render(self, smpl_multi_subjects, fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False, remove_background=True):
         smpl_model_path, verts_frames, meta = smpl_multi_subjects
         color_frames, depth_frames = render_from_smpl_multiple_subjects(
             verts_frames, meta["cam"], meta["focal_length"],
@@ -180,7 +181,8 @@ class RenderMultipleSubjectsSMPLMesh:
             (color_frames[..., 1] == 1.) & 
             (color_frames[..., 2] == 1.)
         ]
-        color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
+        if remove_background:
+            color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
         white_mask_tensor = torch.stack(white_mask, dim=0)
         white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
         white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
