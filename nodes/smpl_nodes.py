@@ -183,6 +183,8 @@ class RenderMultipleSubjectsSMPLMesh:
         ]
         if remove_background:
             color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
+        elif normals:
+            color_frames[..., :3][white_mask] = torch.Tensor([128, 128, 255]).float() / 255.
         white_mask_tensor = torch.stack(white_mask, dim=0)
         white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
         white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)

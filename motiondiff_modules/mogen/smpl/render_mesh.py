@@ -431,7 +431,7 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
 
         if depth_only:
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
-            color = np.zeros([frame_height, frame_width, 4])
+            color = np.ones([frame_height, frame_width, 4], dtype=np.uint8) * 255
         else:
             color, depth = r.render(scene, flags=RenderFlags.RGBA)
 
