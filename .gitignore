@@ -129,10 +129,6 @@ logs/
 # Resources as exception
 !resources/*
 
-# Loaded/Saved data files
-*.npz
-*.pickle
-
 # MacOS
 *DS_Store*
 # git
