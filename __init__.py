@@ -20,12 +20,7 @@ from .utils import *
 #from custom_mmpkg.custom_mmhuman3d.core.conventions.keypoints_mapping import convert_kps
 #from custom_mmpkg.custom_mmhuman3d.core.visualization.visualize_keypoints3d import visualize_kp3d
 from pathlib import Path
-from .nodes.smpl_nodes import NODE_CLASS_MAPPINGS as SMPL_NODE_CLASS_MAPPINGS
-from .nodes.smpl_nodes import NODE_DISPLAY_NAME_MAPPINGS as SMPL_NODE_DISPLAY_NAME_MAPPINGS
-from .nodes.mgpt_nodes import NODE_CLASS_MAPPINGS as MGPT_NODE_CLASS_MAPPINGS
-from .nodes.mgpt_nodes import NODE_DISPLAY_NAME_MAPPINGS as MGPT_NODE_DISPLAY_NAME_MAPPINGS
-from .nodes.human4d_nodes import NODE_CLASS_MAPPINGS as HUMAN4D_NODE_CLASS_MAPPINGS
-from .nodes.human4d_nodes import NODE_DISPLAY_NAME_MAPPINGS as HUMAN4D_NODE_DISPLAY_NAME_MAPPINGS
+import importlib, traceback
 
 def create_mdm_model(model_config):
     cfg = mmcv.Config.fromstring(model_config.config_code, '.py')
@@ -272,7 +267,47 @@ class MotionDataVisualizer:
             np_image = np.array(pil_image.convert("RGB")).astype(np.float32) / 255.0
             tensor_frames.append(torch.from_numpy(np_image))
         return (torch.stack(tensor_frames, dim=0), )
+
+def load_nodes():
+    shorted_errors = []
+    full_error_messages = []
+    node_class_mappings = {}
+    node_display_name_mappings = {}
+
+    for filename in (Path(__file__).parent / "nodes").iterdir():
+        module_name = filename.stem
+        if module_name.startswith('.'): continue #Skip hidden files created by the OS (e.g. [.DS_Store](https://en.wikipedia.org/wiki/.DS_Store))
+        try:
+            module = importlib.import_module(f".nodes.{module_name}", package=__package__)
+            node_class_mappings.update(getattr(module, "NODE_CLASS_MAPPINGS"))
+            if hasattr(module, "NODE_DISPLAY_NAME_MAPPINGS"):
+                node_display_name_mappings.update(getattr(module, "NODE_DISPLAY_NAME_MAPPINGS"))
+
+            print(f"Imported {module_name} nodes")
+
+        except AttributeError:
+            pass  # wip nodes
+        except Exception:
+            error_message = traceback.format_exc()
+            full_error_messages.append(error_message)
+            error_message = error_message.splitlines()[-1]
+            shorted_errors.append(
+                f"Failed to import module {module_name} because {error_message}"
+            )
     
+    if len(shorted_errors) > 0:
+        full_err_log = '\n\n'.join(full_error_messages)
+        print(f"\n\nFull error log from ComfyUI-MotionDiff: \n{full_err_log}\n\n")
+        print(
+            f"Some nodes failed to load:\n\t"
+            + "\n\t".join(shorted_errors)
+            + "\n\n"
+            + "Check that you properly installed the dependencies.\n"
+            + "If you think this is a bug, please report it on the github page (https://github.com/Fannovel16/ComfyUI-MotionDiff/issues)"
+        )
+    return node_class_mappings, node_display_name_mappings
+
+AUX_NODE_MAPPINGS, AUX_DISPLAY_NAME_MAPPINGS = load_nodes()
 
 NODE_CLASS_MAPPINGS = {
     "MotionDiffLoader": MotionDiffLoader,
@@ -280,9 +315,7 @@ NODE_CLASS_MAPPINGS = {
     "MotionDiffSimpleSampler": MotionDiffSimpleSampler,
     "EmptyMotionData": EmptyMotionData,
     "MotionDataVisualizer": MotionDataVisualizer,
-    **SMPL_NODE_CLASS_MAPPINGS,
-    **MGPT_NODE_CLASS_MAPPINGS,
-    **HUMAN4D_NODE_CLASS_MAPPINGS
+    **AUX_NODE_MAPPINGS
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -291,7 +324,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MotionDiffSimpleSampler": "MotionDiff Simple Sampler",
     "EmptyMotionData": "Empty Motion Data",
     "MotionDataVisualizer": "Motion Data Visualizer",
-    **SMPL_NODE_DISPLAY_NAME_MAPPINGS,
-    **MGPT_NODE_DISPLAY_NAME_MAPPINGS,
-    **HUMAN4D_NODE_DISPLAY_NAME_MAPPINGS
+    **AUX_DISPLAY_NAME_MAPPINGS
 }

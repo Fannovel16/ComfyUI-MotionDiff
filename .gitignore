@@ -118,14 +118,6 @@ logs/
 *.pth
 *.pt
 
-
-# Visualization
-*.gif
-*.jpg
-*.obj
-*.ply
-!demo/resources/*
-
 # Resources as exception
 !resources/*
 

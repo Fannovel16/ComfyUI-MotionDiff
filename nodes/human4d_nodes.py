@@ -10,8 +10,9 @@ from PIL import Image
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
+from motiondiff_modules import download_models
 from motiondiff_modules.hmr2.configs import CACHE_DIR_4DHUMANS
-from motiondiff_modules.hmr2.models import HMR2, download_models, load_hmr2, DEFAULT_CHECKPOINT
+from motiondiff_modules.hmr2.models import load_hmr2, DEFAULT_CHECKPOINT
 from motiondiff_modules.hmr2.utils import recursive_to
 from motiondiff_modules.hmr2.datasets.vitdet_dataset import ViTDetDataset, DEFAULT_MEAN, DEFAULT_STD
 from motiondiff_modules.hmr2.utils.renderer import cam_crop_to_full
@@ -24,6 +25,8 @@ from motiondiff_modules.hmr2.utils.render_openpose import render_openpose as _re
 from functools import partial
 import comfy.utils
 from tqdm import tqdm
+from motiondiff_modules.mogen.smpl.rotation2xyz import Rotation2xyz
+import trimesh
 
 smpl_models_dict = get_smpl_models_dict()
 
@@ -45,7 +48,7 @@ class Humans4DLoader:
         url_prefix = "https://github.com/ultralytics/assets/releases/latest/download/"
         if "person" in detector:
             url_prefix = "https://huggingface.co/Bingsu/adetailer/resolve/main/" 
-        download_models(CACHE_DIR_4DHUMANS, {detector: url_prefix+detector})
+        download_models({detector: url_prefix+detector})
         model, model_cfg = load_hmr2(DEFAULT_CHECKPOINT)
         device = get_torch_device()
         model = model.to(device)
@@ -82,6 +85,17 @@ def render_openpose(kps_2d_frames, boxes_frames, frame_width, frame_height):
         openpose_frames.append(canvas)
     return torch.from_numpy(np.stack(openpose_frames))
 
+def vertices_to_trimesh(vertices, camera_translation, rot_axis=[1,0,0], rot_angle=0):
+    mesh = trimesh.Trimesh(vertices + camera_translation)
+    rot = trimesh.transformations.rotation_matrix(
+            np.radians(rot_angle), rot_axis)
+    mesh.apply_transform(rot)
+
+    rot = trimesh.transformations.rotation_matrix(
+        np.radians(180), [1, 0, 0])
+    mesh.apply_transform(rot)
+    return mesh
+
 class Human4D_Img2SMPL:
     @classmethod
     def INPUT_TYPES(s):
@@ -105,7 +119,7 @@ class Human4D_Img2SMPL:
 
     def get_boxes(self, detector, image, batch_size, **kwargs):
         boxes_images = []
-        for img_batch in DataLoader(image, shuffle=False, batch_size=batch_size, num_workers=0):
+        for img_batch in tqdm(DataLoader(image, shuffle=False, batch_size=batch_size, num_workers=0)):
             det_results = detector.predict([img.numpy() for img in img_batch], classes=[0], **kwargs)
             boxes_images.extend([det_result.boxes.xyxy.cpu().numpy() for det_result in det_results])
         return boxes_images
@@ -127,7 +141,6 @@ class Human4D_Img2SMPL:
             dataset = ViTDetDataset(models.model_cfg, img_cv2, boxes)
             dataloader = torch.utils.data.DataLoader(dataset, batch_size=hmr_batch_size, shuffle=False, num_workers=0)
             _all_verts = []
-            _all_cam_t = []
             _all_kps_2d = []
 
             for batch in dataloader:
@@ -147,18 +160,15 @@ class Human4D_Img2SMPL:
                 batch_size = batch['img'].shape[0]
                 for n in range(batch_size):
                     verts = out['pred_vertices'][n].detach().cpu() #Shape [num_verts, 3]
-                    cam_t = pred_cam_t_full[n]
+                    cam_t = pred_cam_t_full[n] # Shape [3]
                     kps_2d = out['pred_keypoints_2d'][n].detach().cpu() #Shape [44, 3]
+                    verts = torch.from_numpy(vertices_to_trimesh(verts, cam_t.unsqueeze(0)).vertices)
                     _all_verts.append(verts)
-                    _all_cam_t.append(cam_t)
                     _all_kps_2d.append(kps_2d)
             
             if len(_all_verts):
                 verts_frames.append(
                     torch.stack(_all_verts) #Shape [num_subjects, num_verts, 3]
-                )
-                cam_t_frames.append(
-                    torch.stack(_all_cam_t) #Shape [num_subjects, 3]
                 )
                 kps_2d_frames.append(
                     torch.stack(_all_kps_2d) #Shape [num_subjects, 44, 3]
@@ -169,11 +179,13 @@ class Human4D_Img2SMPL:
                 kps_2d_frames.append(None)
             pbar.update(1)
         verts_frames #List of [num_subjects, num_verts, 3]
-        cam_t_frames #List of [num_frames, num_subjects, 3]
         kps_2d_frames #List of [num_subjects, 44, 3]
+        rot2xyz = Rotation2xyz(device="cpu", smpl_model_path=smpl_models_dict["SMPL_NEUTRAL.pkl"])
+        faces = rot2xyz.smpl_model.faces
+        
         return ((
-            smpl_models_dict["SMPL_NEUTRAL.pkl"], verts_frames, 
-            {"normalized_to_vertices": True, 'cam': cam_t_frames, 
+            verts_frames, 
+            {"faces": faces, "normalized_to_vertices": True, 'cam': cam_t_frames, 
             "frame_width": int(img_size[0, 0].item()), "frame_height": int(img_size[0, 1].item()), 
             "focal_length": scaled_focal_length, 
             "render_openpose": partial(render_openpose, kps_2d_frames, boxes_images, int(img_size[0, 0].item()), int(img_size[0, 1].item()))}

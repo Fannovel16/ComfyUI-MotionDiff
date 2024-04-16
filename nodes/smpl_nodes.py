@@ -147,8 +147,8 @@ class RenderMultipleSubjectsSMPLMesh:
                 "smpl_multi_subjects": ("SMPL_MULTIPLE_SUBJECTS", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "fx_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10, "step": 0.01}),
-                "fy_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10, "step": 0.01}),
+                "fx_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10000, "step": 0.01}),
+                "fy_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10000, "step": 0.01}),
                 "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
@@ -168,11 +168,12 @@ class RenderMultipleSubjectsSMPLMesh:
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
     def render(self, smpl_multi_subjects, fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False, remove_background=True):
-        smpl_model_path, verts_frames, meta = smpl_multi_subjects
+        verts_frames, meta = smpl_multi_subjects
         color_frames, depth_frames = render_from_smpl_multiple_subjects(
-            verts_frames, meta["cam"], meta["focal_length"],
+            verts_frames, meta["faces"], meta["focal_length"],
             fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, meta["frame_width"], meta["frame_height"], draw_platform,depth_only, normals,
-            smpl_model_path=smpl_model_path
+            cx=meta.get('cx', meta["frame_width"] / 2), cy=meta.get('cy', meta["frame_height"] / 2),
+            vertical_flip=meta.get("vertical_flip", True)
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
@@ -366,31 +367,16 @@ class Export_SMPLMultipleSubjects_To_3DSoftware:
     OUTPUT_NODE = True
 
     CATEGORY = "MotionDiff/smpl"
-
-    def vertices_to_trimesh(self, vertices, camera_translation, faces, rot_axis=[1,0,0], rot_angle=0,):
-        import trimesh
-        mesh = trimesh.Trimesh(vertices + camera_translation, faces.copy())
-        
-        rot = trimesh.transformations.rotation_matrix(
-                np.radians(rot_angle), rot_axis)
-        mesh.apply_transform(rot)
-
-        rot = trimesh.transformations.rotation_matrix(
-            np.radians(180), [1, 0, 0])
-        mesh.apply_transform(rot)
-        return mesh
     
     def save_smpl(self, smpl_multi_subjects, foldername_prefix, format):
-        import json
+        import json, trimesh
         foldername_prefix += self.prefix_append
         full_output_folder, foldername, counter, subfolder, foldername_prefix = folder_paths.get_save_image_path(foldername_prefix, self.output_dir, 196, 24)
         folder = os.path.join(full_output_folder, f"{foldername}_{counter:05}_")
         os.makedirs(folder, exist_ok=True)
 
-        smpl_model_path, verts_frames, meta = smpl_multi_subjects
-        rot2xyz = Rotation2xyz(device="cpu", smpl_model_path=smpl_model_path)
-        faces = rot2xyz.smpl_model.faces
-        cam_t_frames, focal_length, frame_width, frame_height= meta["cam"], meta["focal_length"], meta["frame_width"], meta["frame_height"]
+        verts_frames, meta = smpl_multi_subjects
+        focal_length, frame_width, frame_height = meta["focal_length"], meta["frame_width"], meta["frame_height"]
         
         pbar = comfy.utils.ProgressBar(len(verts_frames))
         for i in tqdm(range(len(verts_frames))):
@@ -399,12 +385,11 @@ class Export_SMPLMultipleSubjects_To_3DSoftware:
             subjects = verts_frames[i]
             if subjects is None:
                 continue
-            cam_t_subjects = cam_t_frames[i]
-            for j, (subject_vertices, cam_t) in enumerate(zip(subjects, cam_t_subjects)):
-                mesh = self.vertices_to_trimesh(subject_vertices, cam_t, faces)
+            for j, (subject_vertices) in enumerate(subjects):
+                mesh = trimesh.Trimesh(subject_vertices, faces=meta["faces"])
                 mesh.export(os.path.join(frame_dir, f'subject_{j}.{format}'))
             with open(os.path.join(frame_dir, "camera_intrinsics.json"), 'w') as f:
-                json.dump(dict(fx=focal_length.item(), fy=focal_length.item(), cx=frame_width / 2, cy=frame_height / 2, zfar="1e12"), f)
+                json.dump(dict(fx=focal_length.item(), fy=focal_length.item(), cx=meta.get('cx', frame_width / 2), cy=meta.get('cy', frame_height / 2), zfar="1e12"), f)
             pbar.update(1)
         return {}
    

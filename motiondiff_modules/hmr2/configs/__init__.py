@@ -2,8 +2,9 @@ import os
 from typing import Dict
 from yacs.config import CfgNode as CN
 from pathlib import Path
+from motiondiff_modules import CKPT_DIR_PATH
 
-CACHE_DIR_4DHUMANS = os.environ.get("4DHUMAN_CACHE", str(Path(__file__).parent.parent.parent.parent / "ckpts"))
+CACHE_DIR_4DHUMANS = os.environ.get("4DHUMAN_CACHE", str(CKPT_DIR_PATH))
 
 def to_lower(x: Dict) -> Dict:
     """
