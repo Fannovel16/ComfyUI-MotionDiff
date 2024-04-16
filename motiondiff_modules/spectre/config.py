@@ -5,6 +5,7 @@ from yacs.config import CfgNode as CN
 import argparse
 import yaml
 import os
+from motiondiff_modules import download_models, CKPT_DIR_PATH
 
 cfg = CN()
 
@@ -23,7 +24,7 @@ cfg.model.topology_path = os.path.join(cfg.project_dir, 'data' , 'head_template.
 # texture data original from http://files.is.tue.mpg.de/tbolkart/FLAME/FLAME_texture_data.zip
 cfg.model.dense_template_path = os.path.join(cfg.project_dir, 'data', 'texture_data_256.npy')
 cfg.model.fixed_displacement_path = os.path.join(cfg.project_dir, 'data', 'fixed_displacement_256.npy')
-cfg.model.flame_model_path = os.path.join(cfg.project_dir, 'data', 'FLAME2020', 'generic_model.pkl')
+cfg.model.flame_model_path = os.path.join(str(CKPT_DIR_PATH), '..' , 'smpl_models' , 'FLAME_NEUTRAL.pkl')
 cfg.model.flame_lmk_embedding_path = os.path.join(cfg.project_dir, 'data', 'landmark_embedding.npy')
 cfg.model.face_mask_path = os.path.join(cfg.project_dir, 'data', 'uv_face_mask.png')
 cfg.model.face_eye_mask_path = os.path.join(cfg.project_dir, 'data', 'uv_face_eye_mask.png')
