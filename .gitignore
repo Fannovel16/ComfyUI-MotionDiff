@@ -132,4 +132,4 @@ datasets/*
 ckpts/*
 retrieval_dbs/*
 custom_mmpkg/custom_mmhuman3d
-mGPT/checkpoints
+motiondiff_modules/mGPT/checkpoints

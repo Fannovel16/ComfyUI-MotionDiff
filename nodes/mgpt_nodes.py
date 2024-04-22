@@ -7,7 +7,6 @@ from omegaconf import OmegaConf
 from model_management import get_torch_device
 import inspect
 import motiondiff_modules
-from pathlib import Path
 from comfy.utils import load_torch_file
 
 class mgpt_model_loader:
@@ -45,7 +44,7 @@ class mgpt_model_loader:
                 print(f"Downloading model to {model_path}")
                 from huggingface_hub import snapshot_download
                 snapshot_download(repo_id="Kijai/AnimationGPT_pruned",
-                                    local_dir=model_path, local_dir_use_symlinks=False, allow_patterns=[f"*{self.model_name}*"])  
+                                    local_dir=base_bath, local_dir_use_symlinks=False, allow_patterns=[f"*{self.model_name}*"])  
             
             state_dict = load_torch_file(model_path)
 
