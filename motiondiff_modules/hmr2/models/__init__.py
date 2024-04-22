@@ -14,9 +14,6 @@ def download_models(folder=CACHE_DIR_4DHUMANS, extra_filename_links={}):
     download_files = {
         "model_config.yaml": ["https://huggingface.co/spaces/brjathu/HMR2.0/raw/main/logs/train/multiruns/hmr2/0/model_config.yaml", folder],
         "epoch=35-step=1000000.ckpt": ["https://huggingface.co/spaces/brjathu/HMR2.0/resolve/main/logs/train/multiruns/hmr2/0/checkpoints/epoch%3D35-step%3D1000000.ckpt", folder],
-        "SMPL_NEUTRAL.pkl":  ["https://huggingface.co/spaces/brjathu/HMR2.0/resolve/main/data/smpl/SMPL_NEUTRAL.pkl", os.path.join(folder, 'data', 'smpl')],
-        "SMPL_to_J19.pkl":  ["https://huggingface.co/spaces/brjathu/HMR2.0/resolve/main/data/SMPL_to_J19.pkl", os.path.join(folder, 'data')],
-        "smpl_mean_params.npz": ["https://huggingface.co/spaces/brjathu/HMR2.0/resolve/main/data/smpl_mean_params.npz", os.path.join(folder, 'data')],
         **{filename: [link, folder] for filename, link in extra_filename_links.items()}
     }
     for file_name, url in download_files.items():
@@ -35,9 +32,11 @@ def download_models(folder=CACHE_DIR_4DHUMANS, extra_filename_links={}):
                 os.system("tar -xvf " + output_path + " -C " + url[1])
 
 def check_smpl_exists():
-    import os
+    import os, motiondiff_modules
+    from pathlib import Path
+    SMPL_MODEL_PATH = (Path(motiondiff_modules.__file__).parent.parent / "smpl_models").resolve()
     candidates = [
-        f'{CACHE_DIR_4DHUMANS}/data/smpl/SMPL_NEUTRAL.pkl'
+        f'{SMPL_MODEL_PATH}/SMPL_NEUTRAL.pkl'
     ]
     candidates_exist = [os.path.exists(c) for c in candidates]
     if not any(candidates_exist):

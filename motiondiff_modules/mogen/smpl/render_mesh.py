@@ -18,7 +18,6 @@ import trimesh
 from pyrender.constants import RenderFlags
 from comfy.model_management import get_torch_device
 from tqdm import tqdm
-from PIL import Image
 
 shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
@@ -285,7 +284,7 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
 
         if depth_only:
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
-            color = np.zeros([frame_width, frame_height, 3])
+            color = np.ones([frame_height, frame_width, 4])
         else:
             color, depth = r.render(scene, flags=RenderFlags.RGBA)
 
@@ -299,24 +298,9 @@ def render_from_smpl(thetas, yfov, move_x, move_y, move_z, x_rot, y_rot, z_rot, 
     return np.stack(vid, axis=0), np.stack(vid_depth, axis=0)
 
 # verts_frames: list of [num_subjects, num_verts, 3]
-# cam_t_frames: list of [num_subjects, 3]
-def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length, fx_offset, fy_offset, move_x, move_y, move_z, x_rot, y_rot, z_rot, frame_width, frame_height, draw_platform=True, depth_only=False, normals=False, smpl_model_path=None):
-    def vertices_to_trimesh(vertices, camera_translation, faces, rot_axis=[1,0,0], rot_angle=0,):
-        mesh = trimesh.Trimesh(vertices + camera_translation, faces.copy())
-        
-        rot = trimesh.transformations.rotation_matrix(
-                np.radians(rot_angle), rot_axis)
-        mesh.apply_transform(rot)
-
-        rot = trimesh.transformations.rotation_matrix(
-            np.radians(180), [1, 0, 0])
-        mesh.apply_transform(rot)
-        return mesh
-    
-    rot2xyz = Rotation2xyz(device="cpu", smpl_model_path=smpl_model_path)
-    faces = rot2xyz.smpl_model.faces
-    MINS = torch.stack([verts_frame.min(0).values.min(0).values for verts_frame in verts_frames]).min(0).values
-    MAXS = torch.stack([verts_frame.max(0).values.max(0).values for verts_frame in verts_frames]).max(0).values
+def render_from_smpl_multiple_subjects(verts_frames, faces, focal_length, fx_offset, fy_offset, move_x, move_y, move_z, x_rot, y_rot, z_rot, frame_width, frame_height, draw_platform=True, depth_only=False, normals=False, vertical_flip=True, cx=0, cy=0):
+    MINS = torch.stack([verts_frame.min(0).values.min(0).values for verts_frame in verts_frames if verts_frame is not None]).min(0).values
+    MAXS = torch.stack([verts_frame.max(0).values.max(0).values for verts_frame in verts_frames if verts_frame is not None]).max(0).values
     minx = MINS[0] - 0.5
     maxx = MAXS[0] + 0.5
     minz = MINS[2] - 0.5 
@@ -401,7 +385,7 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
      
     #Build the scene
     camera = pyrender.IntrinsicsCamera(fx=focal_length + fx_offset, fy=focal_length + fy_offset,
-                                        cx=frame_width / 2, cy=frame_height / 2, zfar=1e12)
+                                        cx=cx, cy=cy)
     bg_color = [1, 1, 1, 0.8]
     scene = pyrender.Scene(bg_color=bg_color, ambient_light=(0.4, 0.4, 0.4))
     scene.add(camera, pose=camera_pose)
@@ -417,10 +401,13 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
     pbar = comfy.utils.ProgressBar(len(verts_frames))
     for i in tqdm(range(len(verts_frames))):
         subjects = verts_frames[i]
-        cam_t_subjects = cam_t_frames[i]
         mesh_nodes = []
-        for subject_vertices, cam_t in zip(subjects, cam_t_subjects):
-            mesh = vertices_to_trimesh(subject_vertices, cam_t, faces)
+        if subjects is None:
+            vid.append(np.ones([frame_height, frame_width, 4], dtype=np.uint8))
+            vid_depth.append(np.zeros([frame_height, frame_width], dtype=np.float32))
+            continue
+        for subject_vertices in subjects:
+            mesh = trimesh.Trimesh(subject_vertices, faces=faces)
             mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
             mesh_node = pyrender.Node(mesh=mesh)
             scene.add_node(mesh_node)
@@ -428,7 +415,7 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
 
         if depth_only:
             depth = r.render(scene, flags=RenderFlags.DEPTH_ONLY)
-            color = np.zeros([frame_width, frame_height, 3])
+            color = np.ones([frame_height, frame_width, 4], dtype=np.uint8) * 255
         else:
             color, depth = r.render(scene, flags=RenderFlags.RGBA)
 
@@ -438,5 +425,4 @@ def render_from_smpl_multiple_subjects(verts_frames, cam_t_frames, focal_length,
         pbar.update(1)
         
     r = None
-
     return np.stack(vid, axis=0), np.stack(vid_depth, axis=0)

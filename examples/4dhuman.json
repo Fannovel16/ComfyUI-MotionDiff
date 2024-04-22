@@ -1,0 +1,712 @@
+{
+  "last_node_id": 20,
+  "last_link_id": 24,
+  "nodes": [
+    {
+      "id": 9,
+      "type": "Reroute",
+      "pos": [
+        719,
+        -1008
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "IMAGE",
+          "links": [
+            9
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": false,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 10,
+      "type": "Reroute",
+      "pos": [
+        1011,
+        -1007
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "IMAGE",
+          "links": [
+            10
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": false,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 17,
+      "type": "Reroute",
+      "pos": [
+        1086,
+        -2099
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "SMPL_MULTIPLE_SUBJECTS",
+          "links": [
+            21,
+            23
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": false,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 20,
+      "type": "Reroute",
+      "pos": [
+        1438,
+        -2143
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "SMPL_MULTIPLE_SUBJECTS",
+          "links": [
+            24
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": false,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 1,
+      "type": "VHS_LoadVideo",
+      "pos": [
+        375,
+        -1318
+      ],
+      "size": [
+        235.1999969482422,
+        362.02931764612646
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            3,
+            7
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "audio",
+          "type": "VHS_AUDIO",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_LoadVideo"
+      },
+      "widgets_values": {
+        "video": "skateboard_test.mp4",
+        "force_rate": 0,
+        "force_size": "Disabled",
+        "custom_width": 512,
+        "custom_height": 512,
+        "frame_load_cap": 40,
+        "skip_first_frames": 20,
+        "select_every_nth": 10,
+        "choose video to upload": "image",
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "frame_load_cap": 40,
+            "skip_first_frames": 20,
+            "force_rate": 0,
+            "filename": "Shootout_in_the_lobby_The_Matrix_Open_Matte_2.mp4",
+            "type": "input",
+            "format": "video/mp4",
+            "select_every_nth": 10
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "Human4D_Img2SMPL",
+      "pos": [
+        699,
+        -1974
+      ],
+      "size": [
+        362.79998779296875,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "human4d_model",
+          "type": "HUMAN4D_MODEL",
+          "link": 2
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "opt_scorehmr_refiner",
+          "type": "SCORE_HMR_MODEL",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SMPL_MULTIPLE_SUBJECTS",
+          "type": "SMPL_MULTIPLE_SUBJECTS",
+          "links": [
+            4,
+            20
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Human4D_Img2SMPL"
+      },
+      "widgets_values": [
+        0.25,
+        0.7,
+        10,
+        8
+      ]
+    },
+    {
+      "id": 5,
+      "type": "RenderMultipleSubjectsSMPLMesh",
+      "pos": [
+        700,
+        -1759
+      ],
+      "size": {
+        "0": 367.79998779296875,
+        "1": 362
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl_multi_subjects",
+          "type": "SMPL_MULTIPLE_SUBJECTS",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            18
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "DEPTH_MAP",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RenderMultipleSubjectsSMPLMesh"
+      },
+      "widgets_values": [
+        false,
+        false,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        "#000000",
+        true
+      ]
+    },
+    {
+      "id": 3,
+      "type": "Humans4DLoader",
+      "pos": [
+        711,
+        -2097
+      ],
+      "size": {
+        "0": 315,
+        "1": 82
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "HUMAN4D_MODEL",
+          "type": "HUMAN4D_MODEL",
+          "links": [
+            2
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Humans4DLoader"
+      },
+      "widgets_values": [
+        "yolov8x.pt",
+        false
+      ]
+    },
+    {
+      "id": 18,
+      "type": "Export_SMPLMultipleSubjects_To_3DSoftware",
+      "pos": [
+        1809,
+        -2101
+      ],
+      "size": [
+        420,
+        82
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl_multi_subjects",
+          "type": "SMPL_MULTIPLE_SUBJECTS",
+          "link": 24
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Export_SMPLMultipleSubjects_To_3DSoftware"
+      },
+      "widgets_values": [
+        "4dhuman_meshes",
+        "glb"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects",
+      "pos": [
+        1230,
+        -2037
+      ],
+      "size": {
+        "0": 317.4000244140625,
+        "1": 26
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl_multi_subjects",
+          "type": "SMPL_MULTIPLE_SUBJECTS",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            17
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects"
+      }
+    },
+    {
+      "id": 12,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        1908,
+        -1955
+      ],
+      "size": [
+        355.695362437855,
+        464.31822620738626
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 17
+        },
+        {
+          "name": "audio",
+          "type": "VHS_AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "OpenPose",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "AnimateDiff",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "AnimateDiff_00039.mp4",
+            "subfolder": "",
+            "type": "output",
+            "format": "video/h264-mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        1516,
+        -1959
+      ],
+      "size": [
+        371.42263516512776,
+        474.045498934659
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        },
+        {
+          "name": "audio",
+          "type": "VHS_AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "Normal",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "AnimateDiff",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "AnimateDiff_00040.mp4",
+            "subfolder": "",
+            "type": "output",
+            "format": "video/h264-mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        1117,
+        -1962
+      ],
+      "size": [
+        377.33172607421875,
+        485.863680752841
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 10
+        },
+        {
+          "name": "audio",
+          "type": "VHS_AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "title": "Input",
+      "properties": {
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "AnimateDiff",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "AnimateDiff_00041.mp4",
+            "subfolder": "",
+            "type": "output",
+            "format": "video/h264-mp4"
+          }
+        }
+      }
+    }
+  ],
+  "links": [
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "HUMAN4D_MODEL"
+    ],
+    [
+      3,
+      1,
+      0,
+      4,
+      1,
+      "IMAGE"
+    ],
+    [
+      4,
+      4,
+      0,
+      5,
+      0,
+      "SMPL_MULTIPLE_SUBJECTS"
+    ],
+    [
+      7,
+      1,
+      0,
+      9,
+      0,
+      "*"
+    ],
+    [
+      9,
+      9,
+      0,
+      10,
+      0,
+      "*"
+    ],
+    [
+      10,
+      10,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      17,
+      7,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      18,
+      5,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      20,
+      4,
+      0,
+      17,
+      0,
+      "*"
+    ],
+    [
+      21,
+      17,
+      0,
+      7,
+      0,
+      "SMPL_MULTIPLE_SUBJECTS"
+    ],
+    [
+      23,
+      17,
+      0,
+      20,
+      0,
+      "*"
+    ],
+    [
+      24,
+      20,
+      0,
+      18,
+      0,
+      "SMPL_MULTIPLE_SUBJECTS"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

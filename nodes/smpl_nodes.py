@@ -16,6 +16,8 @@ from PIL import ImageColor
 import folder_paths
 from trimesh import Trimesh
 from trimesh.exchange.load import mesh_formats
+from tqdm import tqdm
+import comfy.utils
 
 smpl_model_dicts = None
 class SmplifyMotionData:
@@ -145,8 +147,8 @@ class RenderMultipleSubjectsSMPLMesh:
                 "smpl_multi_subjects": ("SMPL_MULTIPLE_SUBJECTS", ),
                 "draw_platform": ("BOOLEAN", {"default": False}),
                 "depth_only": ("BOOLEAN", {"default": False}),
-                "fx_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10, "step": 0.01}),
-                "fy_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10, "step": 0.01}),
+                "fx_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10000, "step": 0.01}),
+                "fy_offset": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 10000, "step": 0.01}),
                 "move_x": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
                 "move_y": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
                 "move_z": ("FLOAT", {"default": 0,"min": -500, "max": 500, "step": 0.01}),
@@ -157,6 +159,7 @@ class RenderMultipleSubjectsSMPLMesh:
             },
             "optional": {
                 "normals": ("BOOLEAN", {"default": False}),
+                "remove_background": ("BOOLEAN", {"default": True})
             }
         }
 
@@ -164,12 +167,13 @@ class RenderMultipleSubjectsSMPLMesh:
     RETURN_NAMES = ("IMAGE", "DEPTH_MAP")
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
-    def render(self, smpl_multi_subjects, fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False):
-        smpl_model_path, verts_frames, meta = smpl_multi_subjects
+    def render(self, smpl_multi_subjects, fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, draw_platform, depth_only, background_hex_color, normals=False, remove_background=True):
+        verts_frames, meta = smpl_multi_subjects
         color_frames, depth_frames = render_from_smpl_multiple_subjects(
-            verts_frames, meta["cam"], meta["focal_length"],
+            verts_frames, meta["faces"], meta["focal_length"],
             fx_offset, fy_offset, move_x, move_y, move_z, rotate_x, rotate_y, rotate_z, meta["frame_width"], meta["frame_height"], draw_platform,depth_only, normals,
-            smpl_model_path=smpl_model_path
+            cx=meta.get('cx', meta["frame_width"] / 2), cy=meta.get('cy', meta["frame_height"] / 2),
+            vertical_flip=meta.get("vertical_flip", True)
         )
         bg_color = ImageColor.getcolor(background_hex_color, "RGB")
         color_frames = torch.from_numpy(color_frames[..., :3].astype(np.float32) / 255.)
@@ -178,15 +182,16 @@ class RenderMultipleSubjectsSMPLMesh:
             (color_frames[..., 1] == 1.) & 
             (color_frames[..., 2] == 1.)
         ]
-        color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
+        if remove_background:
+            color_frames[..., :3][white_mask] = torch.Tensor(bg_color)
+        elif normals:
+            color_frames[..., :3][white_mask] = torch.Tensor([128, 128, 255]).float() / 255.
         white_mask_tensor = torch.stack(white_mask, dim=0)
         white_mask_tensor = white_mask_tensor.float() / white_mask_tensor.max()
         white_mask_tensor = 1.0 - white_mask_tensor.permute(1, 2, 3, 0).squeeze(dim=-1)
         #Normalize to [0, 1]
+        #For some reason this is already inversed depth???
         normalized_depth = (depth_frames - depth_frames.min()) / (depth_frames.max() - depth_frames.min())
-        #Pyrender's depths are the distance in meters to the camera, which is the inverse of depths in normal context
-        #Ref: https://github.com/mmatl/pyrender/issues/10#issuecomment-468995891
-        normalized_depth[normalized_depth != 0] = 1 - normalized_depth[normalized_depth != 0]
         #https://github.com/Fannovel16/comfyui_controlnet_aux/blob/main/src/controlnet_aux/util.py#L24
         depth_frames = [torch.from_numpy(np.concatenate([x, x, x], axis=2)) for x in normalized_depth[..., None]]
         depth_frames = torch.stack(depth_frames, dim=0)
@@ -323,7 +328,6 @@ class SMPLShapeParameters:
         smpl[2]["shape_parameters"] = shape_parameters
         return (smpl,)
 
-""" 
 class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
     @classmethod
     def INPUT_TYPES(s):
@@ -334,12 +338,60 @@ class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
         }
     RETURN_TYPES = ("IMAGE",)
     CATEGORY = "MotionDiff/smpl"
-
+    FUNCTION = "render"
     def render(self, smpl_multi_subjects):
-        meta = smpl_multi_subjects[2]
-        kps_2d_frames = meta['keypoints_2d']
+        render_openpose = smpl_multi_subjects[2].get("render_openpose", None)
+        if render_openpose is None:
+            raise NotImplementedError("render_openpose")
+        return (render_openpose().float() / 255., )
+
+class Export_SMPLMultipleSubjects_To_3DSoftware:
+    def __init__(self):
+        self.output_dir = folder_paths.get_output_directory()
+        self.type = "output"
+        self.prefix_append = "_smpl"
+    
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "smpl_multi_subjects": ("SMPL_MULTIPLE_SUBJECTS", ),
+                "foldername_prefix": ("STRING", {"default": "4dhuman_meshes"}),
+                "format": (list(mesh_formats()), {"default": 'glb'})
+            }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "save_smpl"
+
+    OUTPUT_NODE = True
+
+    CATEGORY = "MotionDiff/smpl"
+    
+    def save_smpl(self, smpl_multi_subjects, foldername_prefix, format):
+        import json, trimesh
+        foldername_prefix += self.prefix_append
+        full_output_folder, foldername, counter, subfolder, foldername_prefix = folder_paths.get_save_image_path(foldername_prefix, self.output_dir, 196, 24)
+        folder = os.path.join(full_output_folder, f"{foldername}_{counter:05}_")
+        os.makedirs(folder, exist_ok=True)
+
+        verts_frames, meta = smpl_multi_subjects
+        focal_length, frame_width, frame_height = meta["focal_length"], meta["frame_width"], meta["frame_height"]
         
-"""
+        pbar = comfy.utils.ProgressBar(len(verts_frames))
+        for i in tqdm(range(len(verts_frames))):
+            frame_dir = os.path.join(folder, f'frame_{i:05}')
+            os.makedirs(frame_dir, exist_ok=True)
+            subjects = verts_frames[i]
+            if subjects is None:
+                continue
+            for j, (subject_vertices) in enumerate(subjects):
+                mesh = trimesh.Trimesh(subject_vertices, faces=meta["faces"])
+                mesh.export(os.path.join(frame_dir, f'subject_{j}.{format}'))
+            with open(os.path.join(frame_dir, "camera_intrinsics.json"), 'w') as f:
+                json.dump(dict(fx=focal_length.item(), fy=focal_length.item(), cx=meta.get('cx', frame_width / 2), cy=meta.get('cy', frame_height / 2), zfar="1e12"), f)
+            pbar.update(1)
+        return {}
    
 NODE_CLASS_MAPPINGS = {
     "SmplifyMotionData": SmplifyMotionData,
@@ -348,7 +400,9 @@ NODE_CLASS_MAPPINGS = {
     "SaveSMPL": SaveSMPL,
     "ExportSMPLTo3DSoftware": ExportSMPLTo3DSoftware,
     "SMPLShapeParameters": SMPLShapeParameters,
-    "RenderMultipleSubjectsSMPLMesh": RenderMultipleSubjectsSMPLMesh
+    "RenderMultipleSubjectsSMPLMesh": RenderMultipleSubjectsSMPLMesh,
+    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects,
+    "Export_SMPLMultipleSubjects_To_3DSoftware": Export_SMPLMultipleSubjects_To_3DSoftware
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -358,5 +412,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SaveSMPL": "Save SMPL",
     "ExportSMPLTo3DSoftware": "Export SMPL to 3DCGI Software",
     "SMPLShapeParameters": "SMPL Shape Parameters",
-    "RenderMultipleSubjectsSMPLMesh": "Render Mutiple Subjects from SMPL Mesh"
+    "RenderMultipleSubjectsSMPLMesh": "Render Mutiple SMPL Mesh",
+    "Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects": "Render OpenPose from SMPL Multiple",
+    "Export_SMPLMultipleSubjects_To_3DSoftware": "Export Multiple SMPL Subjects toto 3DCGI Software "
 }

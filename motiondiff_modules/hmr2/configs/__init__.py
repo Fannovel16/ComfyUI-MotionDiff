@@ -2,8 +2,9 @@ import os
 from typing import Dict
 from yacs.config import CfgNode as CN
 from pathlib import Path
+from motiondiff_modules import CKPT_DIR_PATH
 
-CACHE_DIR_4DHUMANS = os.environ.get("4DHUMAN_CACHE", str(Path(__file__).parent.parent.parent.parent / "ckpts"))
+CACHE_DIR_4DHUMANS = os.environ.get("4DHUMAN_CACHE", str(CKPT_DIR_PATH))
 
 def to_lower(x: Dict) -> Dict:
     """
@@ -108,9 +109,11 @@ def get_config(config_file: str, merge: bool = True, update_cachedir: bool = Fal
           return path
         return os.path.join(CACHE_DIR_4DHUMANS, path)
 
-      cfg.SMPL.MODEL_PATH = update_path(cfg.SMPL.MODEL_PATH)
-      cfg.SMPL.JOINT_REGRESSOR_EXTRA = update_path(cfg.SMPL.JOINT_REGRESSOR_EXTRA)
-      cfg.SMPL.MEAN_PARAMS = update_path(cfg.SMPL.MEAN_PARAMS)
+      import motiondiff_modules
+      SMPL_MODEL_PATH = Path(motiondiff_modules.__file__).parent.parent / "smpl_models"
+      cfg.SMPL.MODEL_PATH = str(SMPL_MODEL_PATH.resolve())
+      cfg.SMPL.JOINT_REGRESSOR_EXTRA = str((SMPL_MODEL_PATH / "SMPL_to_J19.pkl").resolve())
+      cfg.SMPL.MEAN_PARAMS = str((SMPL_MODEL_PATH / "smpl_mean_params.npz").resolve())
 
     cfg.freeze()
     return cfg

@@ -118,20 +118,8 @@ logs/
 *.pth
 *.pt
 
-
-# Visualization
-*.gif
-*.jpg
-*.obj
-*.ply
-!demo/resources/*
-
 # Resources as exception
 !resources/*
-
-# Loaded/Saved data files
-*.npz
-*.pickle
 
 # MacOS
 *DS_Store*
