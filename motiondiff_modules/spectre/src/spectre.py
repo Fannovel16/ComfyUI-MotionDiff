@@ -25,7 +25,7 @@ from .models.FLAME import FLAME, FLAMETex
 from .utils import util
 from .utils.tensor_cropper import transform_points
 from skimage.io import imread
-torch.backends.cudnn.benchmark = True
+#torch.backends.cudnn.benchmark = True
 import numpy as np
 
 def recursive_to(x, target):
