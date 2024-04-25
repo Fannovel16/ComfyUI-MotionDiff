@@ -237,9 +237,9 @@ class SpectreImg2SMPL:
                 else:
                     opdict[key] = opdict[key][2:-2]
 
-            all_verts.append(opdict["verts"])
-            all_cams.append(codedict["cam"])
-            all_cropped_images.append(codedict["images"])
+            all_verts.append(opdict["verts"].cpu().detach())
+            all_cams.append(codedict["cam"].cpu().detach())
+            all_cropped_images.append(codedict["images"].cpu().detach())
             pbar.update(1)
         
         all_verts, all_cams, all_cropped_images = torch.cat(all_verts)[2:-2], torch.cat(all_cams)[2:-2], torch.cat(all_cropped_images)[2:-2]
