@@ -48,7 +48,11 @@ class Humans4DLoader:
         url_prefix = "https://github.com/ultralytics/assets/releases/latest/download/"
         if "person" in detector:
             url_prefix = "https://huggingface.co/Bingsu/adetailer/resolve/main/" 
-        download_models({detector: url_prefix+detector})
+        download_models({
+            detector: url_prefix+detector, 
+            "model_config.yaml": "https://huggingface.co/spaces/brjathu/HMR2.0/raw/main/logs/train/multiruns/hmr2/0/model_config.yaml",
+            "epoch=35-step=1000000.ckpt": "https://huggingface.co/spaces/brjathu/HMR2.0/resolve/main/logs/train/multiruns/hmr2/0/checkpoints/epoch%3D35-step%3D1000000.ckpt",
+        })
         model, model_cfg = load_hmr2(DEFAULT_CHECKPOINT)
         device = get_torch_device()
         model = model.to(device)
