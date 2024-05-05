@@ -340,7 +340,7 @@ class Render_OpenPose_From_SMPL_Mesh_Multiple_Subjects:
     CATEGORY = "MotionDiff/smpl"
     FUNCTION = "render"
     def render(self, smpl_multi_subjects):
-        render_openpose = smpl_multi_subjects[2].get("render_openpose", None)
+        render_openpose = smpl_multi_subjects[1].get("render_openpose", None)
         if render_openpose is None:
             raise NotImplementedError("render_openpose")
         return (render_openpose().float() / 255., )
