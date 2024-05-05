@@ -265,7 +265,7 @@ class SpectreImg2SMPL:
         return ((all_verts, {
             "frame_width": 224, "frame_height": 224, "vertical_flip": True,
             "focal_length": focal_length,
-            "faces": spectre.flame.faces_tensor
+            "faces": spectre.flame.faces_tensor.cpu().detach()
         }), all_cropped_images)
 
 NODE_CLASS_MAPPINGS = {
