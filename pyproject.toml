@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-motiondiff"
-description = ""
+description = "Implementation of MDM, MotionDiffuse and ReMoDiffuse into ComfyUI."
 version = "1.0.0"
 license = "LICENSE"
 dependencies = ["ftfy", "regex", "tqdm", "scipy", "matplotlib", "git+https://github.com/openai/CLIP.git", "addict", "yapf", "smplx", "h5py", "opencv-python", "einops", "pyrender", "trimesh", "shapely", "mapbox_earcut", "#mgpt", "spacy", "bert-score", "omegaconf", "huggingface_hub", "pytorch_lightning", "rich", "#4dhuman", "yacs", "scikit-image", "timm", "webdataset", "dill", "pandas"]
@@ -12,4 +12,3 @@ Repository = "https://github.com/Fannovel16/ComfyUI-MotionDiff"
 PublisherId = ""
 DisplayName = "ComfyUI-MotionDiff"
 Icon = ""
-Models = [{location = "/checkpoints/model.safetensor", model_url = "https://example.com/model.zip"}]
